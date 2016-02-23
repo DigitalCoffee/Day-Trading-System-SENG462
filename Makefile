@@ -1,3 +1,7 @@
+# Default is to be run from this project folder in your home, which is on a netdrive
+# Audit-related commands are to be run on machine b135
+# Transaction-related commands are to be run on machine b145
+
 default: all
 
 all: interface audit transaction

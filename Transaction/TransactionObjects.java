@@ -1,4 +1,4 @@
-
+import Exception.*;
 import java.util.*;
 
 // Transaction Objects
@@ -142,13 +142,13 @@ class Trigger{
 	Money Price;
 	Money account;
 	int stkaccount;
-	boolean bors;//Buy or sell trigger buy == true; 
+	boolean bors;//Buy or sell trigger buy == true;
 	public Trigger(String stock,int amount, boolean bors){
 		this.stock=stock;
 		if(bors){
 			this.id=stock+"B";
 			this.Price=new Money(amount);
-			
+
 		}else{
 			this.id=stock+"S";
 			this.amount=amount;
@@ -156,7 +156,7 @@ class Trigger{
 		this.account=new Money(0);
 		this.stkaccount=0;
 		this.bors=bors;
-		
+
 	}
 	public void setAmount(User user,int newval){
 		int diff=newval-this.account.toInt();
@@ -167,14 +167,14 @@ class Trigger{
 		user.account.money.subtract(diff);
 		}catch(NegativeMoneyException e){
 			System.out.println("You have not enough minerals 1\nUsername:"+user.userid+"/nNewval="+newval);
-			
+
 			//System.exit(0);
 			return;
 		}
-		
+
 		this.account.add(diff);
-			
-		
+
+
 	}
 	public void setStkamount(User user, int amount){
 		int diff=amount-this.stkaccount;
