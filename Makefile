@@ -3,35 +3,41 @@ default: all
 all: interface audit transaction
 
 interface: Interface/Audit.java
-	javac Interface/Audit.java
-	jar cvf audit.jar Interface/Audit.class
+	javac Exception/*.java
+	javac Interface/*.java
+	jar cvf utils.jar Interface/*.class Exception/*.class
 
-audit: audit.jar Audit/AuditRemote.java Audit/AuditServer.java
+audit: utils.jar Audit/AuditRemote.java Audit/AuditServer.java
 	javac -d Audit Audit/*.java
-	rmic -classpath Audit:audit.jar AuditRemote
+	rmic -classpath Audit:utils.jar AuditRemote
 
-copy_audit: audit.jar AuditRemote_Stub.class
+copy_audit: utils.jar AuditRemote_Stub.class TransactionRemote_Stub.class
 	cp Audit/*.class /seng/scratch/group5/
 	cp AuditRemote_Stub.class /seng/scratch/group5/AuditRemote_Stub.class
-	cp audit.jar /seng/scratch/group5/audit.jar
+	cp TransactionRemote_Stub.class /seng/scratch/group5/TransactionRemote_Stub.class
+	cp utils.jar /seng/scratch/group5/utils.jar
 
-run_audit: /seng/scratch/group5/AuditServer.class /seng/scratch/group5/audit.jar
+run_audit: /seng/scratch/group5/AuditServer.class /seng/scratch/group5/utils.jar
 	rmiregistry 44459 &
-	java -cp /seng/scratch/group5/:/seng/scratch/group5/audit.jar AuditServer
+	java -cp /seng/scratch/group5/:/seng/scratch/group5/utils.jar AuditServer
 
-transaction: audit.jar Transaction/TransactionException.java Transaction/TransactionObjects.java Transaction/TransactionServer.java
+transaction: utils.jar Transaction/TransactionObjects.java Transaction/TransactionRemote.java Transaction/TransactionServer.java
 	javac -d Transaction Transaction/*.java
+	rmic -classpath Transaction:utils.jar TransactionRemote
 
-copy_transaction: audit.jar AuditRemote_Stub.class
+copy_transaction: utils.jar AuditRemote_Stub.class TransactionRemote_Stub.class
 	cp Transaction/*.class /seng/scratch/group5/
-	cp audit.jar /seng/scratch/group5/audit.jar
 	cp AuditRemote_Stub.class /seng/scratch/group5/AuditRemote_Stub.class
+	cp TransactionRemote_Stub.class /seng/scratch/group5/TransactionRemote_Stub.class
+	cp utils.jar /seng/scratch/group5/utils.jar
 
-run_transaction: /seng/scratch/group5/TransactionServer.class /seng/scratch/group5/audit.jar
-	java -cp /seng/scratch/group5/:/seng/scratch/group5/audit.jar TransactionServer
+run_transaction: /seng/scratch/group5/TransactionServer.class /seng/scratch/group5/utils.jar
+	rmiregistry 44459 &
+	java -cp /seng/scratch/group5/:/seng/scratch/group5/utils.jar TransactionServer
 
 clean:
 	rm *.jar
+	rm *.class
 	rm -r Interface/*.class
 	rm -r Audit/*.class
 	rm -r Transaction/*.class

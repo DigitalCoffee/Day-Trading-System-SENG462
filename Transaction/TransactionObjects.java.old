@@ -1,5 +1,4 @@
 import java.util.*;
-import Exception.*;
 
 // Transaction Objects
 
@@ -56,7 +55,6 @@ double revert()
 }
 }
 
-
 // Represents the users held shares
 class Stock {
 int shares;
@@ -96,6 +94,25 @@ public Account()
 }
 }
 
+// A representation of the user and attributes associated with them
+class User {
+String userid;
+Account account;
+HashMap<String, Quote> quotes;
+Stack<Transaction> pending_buys;
+Stack<Transaction> pending_sells;
+// List of owned stock symbols?
+
+public User(String uid)
+{
+	this.userid = uid;
+	this.account = new Account();
+	this.quotes = new HashMap<String, Quote>();
+	this.pending_buys = new Stack<Transaction>();
+	this.pending_sells = new Stack<Transaction>();
+}
+}
+
 // Represents a quote and the data received from the quote server
 class Quote {
 //User user; TODO: add when there are multiple users
@@ -114,17 +131,28 @@ public Quote(String stock, double amount, String timestamp, String cryptokey)
 }
 }
 
-// A representation of the user and attributes associated with them
-class User {
-String userid;
-Account account;
-HashMap<String, Quote> quotes;
-// List of owned stock symbols?
+// Represents a transaction
+/*class Transaction {
+int id;
+User user;
+String stock;
+double amount;
+Quote quote;
+String timestamp;
 
-public User(String uid)
+public Transaction(int id, User user, String stock, double amount, Quote quote)
 {
-	this.userid = uid;
-	this.account = new Account();
-	this.quotes = new HashMap<String, Quote>();
+	this.id = id;
+	this.user = user;
+	this.stock = stock;
+	this.amount = amount;
+	this.quote = quote;
+	this.timestamp = Long.toString(System.currentTimeMillis());
 }
+
+// Determines the maximum whole value of stock than can be purchased/sold
+int determineMaxWholeShare(double sharePrice, double transactionAmount)
+{
+	return (int)Math.floor(transactionAmount / sharePrice);
 }
+}*/
