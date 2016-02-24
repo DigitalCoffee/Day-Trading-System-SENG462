@@ -18,7 +18,7 @@ public static final int VALID_QUOTE_TIME = 60000;
 // Global Objects
 protected static Audit AUDIT_STUB = null;       // Audit Server for remote procedure logging
 private static HashMap<String, Quote> quotes;   // HashMap of quotes for each requested stock symbol
-
+private static HashMap<String, User> users;
 //Global Variables
 public static String serverName = "TS1";
 
@@ -106,20 +106,91 @@ protected Quote GetQuote(String userid, String stockSymbol, long transactionNum,
 // Adds money to the users account. Returns true if successful.
 public boolean Add(String userid, String stockSymbol, long transactionNum)
 {
+	if(!users.containsKey(userid)){
+		user.put(userid,new User(userid));
+		users.get(userid).account.money.add(amount);
+	}else{
+		user.get.(userid).account.money.add(amount);
+	}
+	logger.LogAccountTransactionType(Long.toString(System.currentTimeMillis()),
+					 serverName,
+					 transactionNum,
+					 "add",
+					 user.userid,
+					 amount);
 	return false;
 }
 
 // Returns true if the Buy is added to the user's pending buys
 public boolean Buy(String userid, String stockSymbol, double amount, long transactionNum)
 {
-	return false;
+	if (!user.account.money.positiveResult(amount)) return false;
+	Quote quote;
+	try{
+		quote = QuoteCMD(user, stock, transactionNum, "BUY");
+	} catch (Exception e) {
+		logger.LogErrorEventType(Long.toString(System.currentTimeMillis()),
+					 serverName,
+					 transactionNum,
+					 "BUY",
+					 user.userid,
+					 stock,
+					 null,
+					 amount,
+					 "Could not obtain quote. Error: " + e.getMessage());
+		return false;
+	}
+
+	// Add the buy to the stack
+	Transaction buy = new Transaction(transactionNum, user, stock, amount, quote);
+	user.pending_buys.push(buy);
+
+	//Log <SystemEvent>
+	logger.LogSystemEventType(Long.toString(System.currentTimeMillis()),
+				  serverName,
+				  transactionNum,
+				  "BUY",
+				  user.userid,
+				  stock,
+				  null,
+				  amount);
+	return true;
 }
 
 // Returns a string containing the stock purchased and the user's current funds
 // Throws an exception if the user does not have enough money to buy the stock.
-public String CommitBuy(String userid) throws NegativeMoneyException
+public boolean CommitBuy(String userid) throws NegativeMoneyException
 {
-	return "";
+	// Pop from the stack + execute buy
+	if (users.get(userid).pending_buys.empty())
+		return false;
+	Transaction current = (Transaction)user.pending_buys.pop();
+	int max_stock = current.determineMaxWholeShare(current.quote.amount, current.amount);
+
+	try{
+		Remove(user, current.quote.amount * max_stock, current.id);
+	} catch (NegativeMoneyException e) {
+		logger.LogErrorEventType(Long.toString(System.currentTimeMillis()),
+					 serverName,
+					 current.id,
+					 "COMMIT_BUY",
+					 user.userid,
+					 current.stock,
+					 null,
+					 current.amount,
+					 "Error: User does not have enough funds for this transaction.");
+		return false;
+	}
+
+	Stock held;
+	if (user.account.stock.containsKey(current.stock))
+		held = user.account.stock.get(current.stock);
+	else
+		held = new Stock();
+	held.add(max_stock);
+	user.account.stock.put(current.stock, held);
+	// TODO: Log to file
+	return true;
 }
 
 // Returns a string containing the details of the cancelled buy
