@@ -1,48 +1,33 @@
-# Default is to be run from this project folder in your home, which is on a netdrive
-# Audit-related commands are to be run on machine b135
-# Transaction-related commands are to be run on machine b145
-
 default: all
 
-all: interface audit transaction
+all: utils audit transaction http jar
 
-interface: Interface/Audit.java
+utils:
 	javac Exception/*.java
 	javac Interface/*.java
-	jar cvf utils.jar Interface/*.class Exception/*.class
 
-audit: utils.jar Audit/AuditRemote.java Audit/AuditServer.java
-	javac -d Audit Audit/*.java
-	rmic -classpath Audit:utils.jar AuditRemote
+# machine #b135
+audit:
+	javac Audit/*.java
+	rmic Audit.AuditRemote
 
-copy_audit: utils.jar AuditRemote_Stub.class TransactionRemote_Stub.class
-	cp Audit/*.class /seng/scratch/group5/
-	cp AuditRemote_Stub.class /seng/scratch/group5/AuditRemote_Stub.class
-	cp TransactionRemote_Stub.class /seng/scratch/group5/TransactionRemote_Stub.class
-	cp utils.jar /seng/scratch/group5/utils.jar
+# machine #b145
+transaction:
+	javac Transaction/*.java
+	rmic Transaction.TransactionRemote
 
-run_audit: /seng/scratch/group5/AuditServer.class /seng/scratch/group5/utils.jar
-	rmiregistry 44459 &
-	java -cp /seng/scratch/group5/:/seng/scratch/group5/utils.jar AuditServer
+# machine #b???
+http:
+	javac HTTP/*.java
 
-transaction: utils.jar Transaction/TransactionObjects.java Transaction/TransactionRemote.java Transaction/TransactionServer.java
-	javac -d Transaction Transaction/*.java
-	rmic -classpath Transaction:utils.jar TransactionRemote
-
-copy_transaction: utils.jar AuditRemote_Stub.class TransactionRemote_Stub.class
-	cp Transaction/*.class /seng/scratch/group5/
-	cp AuditRemote_Stub.class /seng/scratch/group5/AuditRemote_Stub.class
-	cp TransactionRemote_Stub.class /seng/scratch/group5/TransactionRemote_Stub.class
-	cp utils.jar /seng/scratch/group5/utils.jar
-
-run_transaction: /seng/scratch/group5/TransactionServer.class /seng/scratch/group5/utils.jar
-	rmiregistry 44459 &
-	java -cp /seng/scratch/group5/:/seng/scratch/group5/utils.jar TransactionServer
+jar:
+	jar cvfe audit.jar Audit.AuditServer Audit/*.class Interface/Audit.class
+	jar cvfe transaction.jar Transaction.TransactionServer Transaction/*.class Interface/*.class Exception/*.class Audit/AuditRemote_Stub.class
+	jar cvfe http.jar HTTP.HTTPServer HTTP/*.class Interface/Transaction.class Transaction/TransactionRemote_Stub.class
 
 clean:
 	rm *.jar
-	rm *.class
 	rm -r Interface/*.class
+	rm -r Exception/*.class
 	rm -r Audit/*.class
 	rm -r Transaction/*.class
-	rm -r /seng/scratch/group5/*

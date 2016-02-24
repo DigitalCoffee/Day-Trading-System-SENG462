@@ -96,6 +96,7 @@ public static void main(String args[])
 							TRANSACTION_STUB.CancelSetSell(m.group(3), m.group(4), transactionNum);
 							break;
 						case "DUMPLOG":
+							// TODO: Send file to client/admin
 							if (m.group(4) != null)
 								TRANSACTION_STUB.Dumplog(m.group(3), m.group(4), transactionNum);
 							else
@@ -115,7 +116,7 @@ public static void main(String args[])
 				}
 			}
 		}
-	} catch (Exception e){
+	} catch (Exception e) {
 		System.err.println("Error: " + e.getMessage());
 	}
 }

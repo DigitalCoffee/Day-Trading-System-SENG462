@@ -1,3 +1,5 @@
+package Transaction;
+
 import Exception.*;
 import Interface.*;
 import java.io.*;
@@ -13,11 +15,12 @@ public class TransactionRemote extends UnicastRemoteObject implements Transactio
 public static final String QUOTE_SERVER = "quoteserve.seng.uvic.ca";
 public static final int QUOTE_PORT = 4443;
 public static final int RMI_TCP_PORT = 44457;
-public static final int VALID_QUOTE_TIME = 60000;
+public static final int VALID_QUOTE_TIME = 30000; // Use for cached quotes. Adjust for buy/quote?
 
 // Global Objects
-protected static Audit AUDIT_STUB = null;       // Audit Server for remote procedure logging
-private static HashMap<String, Quote> quotes;   // HashMap of quotes for each requested stock symbol
+protected static Audit AUDIT_STUB = null;                                       // Audit Server for remote procedure logging
+private static HashMap<String, User> USERS = new HashMap<String, User>();
+private static HashMap<String, Quote> QUOTES = new HashMap<String, Quote>();    // HashMap of quotes for each requested stock symbol
 
 //Global Variables
 public static String serverName = "TS1";
@@ -50,7 +53,7 @@ static void Log(String	type,
 				    stockSymbol,
 				    filename,
 				    message);
-	} catch (Exception e) {
+	} catch (RemoteException e) {
 		System.err.println("Audit server RMI connection exception: " + e.getMessage());
 		e.printStackTrace();
 	}
@@ -74,11 +77,10 @@ static void LogQuote(String	timestamp,
 					     username,
 					     quoteServerTime,
 					     cryptokey);
-	} catch (Exception e) {
+	} catch (RemoteException e) {
 		System.err.println("Audit server RMI connection exception: " + e.getMessage());
 		e.printStackTrace();
 	}
-	System.out.println("Success!");
 }
 
 // Gets the price of a given stock and returns the value as a String
@@ -104,7 +106,7 @@ protected Quote GetQuote(String userid, String stockSymbol, long transactionNum,
 }
 
 // Adds money to the users account. Returns true if successful.
-public boolean Add(String userid, String stockSymbol, long transactionNum)
+public boolean Add(String userid, double amount, long transactionNum)
 {
 	return false;
 }
@@ -117,13 +119,13 @@ public boolean Buy(String userid, String stockSymbol, double amount, long transa
 
 // Returns a string containing the stock purchased and the user's current funds
 // Throws an exception if the user does not have enough money to buy the stock.
-public String CommitBuy(String userid) throws NegativeMoneyException
+public String CommitBuy(String userid, long transactionNum) throws NegativeMoneyException
 {
 	return "";
 }
 
 // Returns a string containing the details of the cancelled buy
-public String CancelBuy(String userid)
+public String CancelBuy(String userid, long transactionNum)
 {
 	return "";
 }

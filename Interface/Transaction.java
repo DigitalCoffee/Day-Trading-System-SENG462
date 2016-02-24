@@ -10,17 +10,17 @@ public static final String LOOKUPNAME = "rmi://b145.seng.uvic.ca:44459/Transacti
 public String Quote_CMD(String userid, String stockSymbol, long transactionNum) throws RemoteException;
 
 // Adds money to the users account. Returns true if successful.
-public boolean Add(String userid, String stockSymbol, long transactionNum) throws RemoteException;
+public boolean Add(String userid, double amount, long transactionNum) throws RemoteException;
 
 // Returns true if the Buy is added to the user's pending buys
 public boolean Buy(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
 
 // Returns a string containing the stock purchased and the user's current funds
 // Throws an exception if the user does not have enough money to buy the stock.
-public String CommitBuy(String userid) throws RemoteException, Exception;
+public String CommitBuy(String userid, long transactionNum) throws RemoteException, Exception;
 
 // Returns a string containing the details of the cancelled buy
-public String CancelBuy(String userid) throws RemoteException;
+public String CancelBuy(String userid, long transactionNum) throws RemoteException;
 
 // Returns true if the Sell is added to the users's pending Sells.
 public boolean Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
