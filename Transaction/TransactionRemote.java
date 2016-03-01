@@ -20,6 +20,7 @@ public static final int RMI_TCP_PORT = 44457;
 protected static Audit AUDIT_STUB = null;               // Audit Server for remote procedure logging
 private static HashMap<String, Quote> QUOTES;           // HashMap of quotes for each requested stock symbol
 private static HashMap<String, User> USERS;
+private static Object LOG_LOCK = new Object();
 //Global Variables
 public static String serverName = "TS1";
 
@@ -43,16 +44,18 @@ static void Log(String	type,
 		String	message)
 {
 	try{
-		AUDIT_STUB.logEvent(type,
-				    timestamp,
-				    server,
-				    transactionNum,
-				    command,
-				    username,
-				    funds,
-				    stockSymbol,
-				    filename,
-				    message);
+		synchronized (LOG_LOCK){
+			AUDIT_STUB.logEvent(type,
+					    timestamp,
+					    server,
+					    transactionNum,
+					    command,
+					    username,
+					    funds,
+					    stockSymbol,
+					    filename,
+					    message);
+		}
 	} catch (Exception e) {
 		System.err.println("Audit server RMI connection exception: " + e.getMessage());
 		e.printStackTrace();
@@ -69,14 +72,16 @@ static void LogQuote(String	timestamp,
 		     String	cryptokey)
 {
 	try{
-		AUDIT_STUB.logQuoteServerHit(timestamp,
-					     server,
-					     transactionNum,
-					     price,
-					     stockSymbol,
-					     username,
-					     quoteServerTime,
-					     cryptokey);
+		synchronized (LOG_LOCK){
+			AUDIT_STUB.logQuoteServerHit(timestamp,
+						     server,
+						     transactionNum,
+						     price,
+						     stockSymbol,
+						     username,
+						     quoteServerTime,
+						     cryptokey);
+		}
 	} catch (Exception e) {
 		System.err.println("Audit server RMI connection exception: " + e.getMessage());
 		e.printStackTrace();
