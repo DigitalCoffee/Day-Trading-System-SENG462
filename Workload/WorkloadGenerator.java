@@ -11,6 +11,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
+//import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -65,6 +66,7 @@ public void run()
 			httppost.setEntity(entity);
 			System.out.println("Thread: " + threadName + ", sending " + cmd);
 			String responseBody = httpclient.execute(httppost, responseHandler);
+			//CloseableHttpResponse response = httpclient.execute(httppost);
 		}
 	} catch (Exception e) {
 		System.err.println("Thread for user " + threadName + " threw exception:\n" + e.getMessage());
@@ -112,7 +114,6 @@ public static void main(String args[])
 	Worker dump = null;
 	try {
 		while ((line = in.readLine()) != null) {
-			System.out.println(line);
 			Matcher m = p.matcher(line);
 			if (m.find()) {
 				if (m.group(1).equals("DUMPLOG")) {
@@ -120,11 +121,12 @@ public static void main(String args[])
 					dump = new Worker("DUMPLOG");
 					dump.commands.add(line);
 				} else {
-					String username = m.group(2);
+					String username = m.group(2).trim();
 					Worker user;
-					if (!workers.containsKey(username))
+					if (!workers.containsKey(username)){
+						System.out.println("New user " + workers.size() + ": " + username);
 						user = new Worker(username);
-					else
+					} else
 						user = workers.get(username);
 					user.commands.add(line);
 					workers.put(username, user);

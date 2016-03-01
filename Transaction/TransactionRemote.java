@@ -211,7 +211,6 @@ public String CommitBuy(String userid, long transactionNum)
 			}
 			try{
 				USERS.get(userid).account.money.subtract(b.amount.toInt() - (b.amount.toInt() % b.q.amount));
-				System.out.println("DEBUG 6");
 				Stock s;
 				if (!USERS.get(userid).account.stock.containsKey(b.symbol)) {
 					s = new Stock();

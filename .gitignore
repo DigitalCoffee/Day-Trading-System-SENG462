@@ -41,4 +41,7 @@ Thumbs.db
 Workload/*.txt
 logfile.xsd
 *.xml
+*.txt
 httpcomponents-client-4.5.1
+Testing
+Stash
