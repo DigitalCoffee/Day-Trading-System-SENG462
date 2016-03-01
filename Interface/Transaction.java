@@ -56,5 +56,5 @@ public void Dumplog(String userid, String filename, long transactionNum) throws 
 public void Dumplog(String filename, long transactionNum) throws RemoteException;
 
 // TODO: This String might get very long...
-public String DisplaySummary(String userid) throws RemoteException;
+public String DisplaySummary(String userid, long transactionNum) throws RemoteException;
 }

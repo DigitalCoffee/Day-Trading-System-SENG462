@@ -41,3 +41,4 @@ Thumbs.db
 Workload/*.txt
 logfile.xsd
 *.xml
+httpcomponents-client-4.5.1

@@ -116,24 +116,16 @@ public Account()
 class Trigger{
 	String id;
 	String stock;
-	int amount;
+	double amount;
 	Money Price;
 	Money account;
 	int stkaccount;
 	boolean bors;//Buy or sell trigger buy == true;
-	public Trigger(String stock,int amount, boolean bors){
+	public Trigger(String stock,double amount){
 		this.stock=stock;
-		if(bors){
-			this.id=stock+"B";
-			this.Price=new Money(amount);
-
-		}else{
-			this.id=stock+"S";
-			this.amount=amount;
-		}
+		this.Price=new Money(amount);
 		this.account=new Money(0);
 		this.stkaccount=0;
-		this.bors=bors;
 
 	}
 	public void setAmount(User user,int newval){
@@ -173,10 +165,10 @@ class Quote {
 //User user; TODO: add when there are multiple users
 String stock;
 double amount;
-String timestamp;
+long timestamp;
 String cryptokey;
 
-public Quote(String stock, double amount, String timestamp, String cryptokey)
+public Quote(String stock, double amount, long timestamp, String cryptokey)
 {
 	//this.user = user; TODO: add when there are multiple users
 	this.stock = stock;
@@ -184,14 +176,40 @@ public Quote(String stock, double amount, String timestamp, String cryptokey)
 	this.timestamp = timestamp;
 	this.cryptokey = cryptokey;
 }
+	public boolean isValid(){
+		return ((new Date().getTime()-timestamp)>60000);
+	}
 }
+class Buy{
+	String symbol;
+	Quote q;
+	Money amount;
+	public Buy(double amount, String stock,Quote q){
+		this.amount=new Money(amount);
+		this.symbol=stock;
+		this.q=q;
+	}
 
+}
+class Sell{
+	String symbol;
+	Money amount;
+	Quote q;
+	public Sell(double amount, String stock,Quote q){
+		this.amount=new Money(amount);
+		this.symbol=stock;
+		this.q=q;
+	}
+
+}
 // A representation of the user and attributes associated with them
 class User {
 String userid;
 Account account;
 HashMap<String, Quote> quotes;
 HashMap<String,Trigger> triggers;
+Stack<Buy>buys;
+Stack<Sell>sells;
 // List of owned stock symbols?
 
 public User(String uid)
@@ -200,5 +218,7 @@ public User(String uid)
 	this.account = new Account();
 	this.quotes = new HashMap<String, Quote>();
 	this.triggers =new HashMap<String,Trigger>();
+	this.buys = new Stack<Buy>();
+	this.sells = new Stack<Sell>();
 }
 }
