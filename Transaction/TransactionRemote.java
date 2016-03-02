@@ -255,10 +255,15 @@ public boolean Sell(String userid, String stockSymbol, double amount, long trans
 {
 	Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SELL", userid, Double.toString(amount), stockSymbol, null, null);
 
-	if (USERS.containsKey(userid) && USERS.get(userid).account.stock.containsKey(stockSymbol)) {
+	if (USERS.containsKey(userid)) {
+		if(USERS.get(userid).account.stock.containsKey(stockSymbol)){
 		Quote q = FindQuote(userid, stockSymbol, transactionNum, "SELL");
 		USERS.get(userid).sells.push(new Sell(amount, stockSymbol, q));
 		return true;
+		}else{
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SELL", userid, Double.toString(amount), stockSymbol, null, "User does not have any of the stock");
+			return false;
+		}
 	} else {
 		Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SELL", userid, Double.toString(amount), stockSymbol, null, "User does not exist");
 		return false;
