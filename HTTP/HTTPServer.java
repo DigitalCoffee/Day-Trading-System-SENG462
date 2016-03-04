@@ -82,7 +82,8 @@ public void run()
 		Matcher m = p.matcher(cmd.trim());
 		if (m.find()) {
 			long transactionNum = Long.valueOf(m.group(1));
-			String command = m.group(2);
+			String command = m.group(2).trim();
+			String name = m.group(3).trim(); //Generally userid, but can be filename for DUMPLOG
 			try{
 				switch (command) {
 				default:
@@ -90,56 +91,56 @@ public void run()
 					//TODO Tell client that their command was invalid.
 					break;
 				case "ADD":
-					TransactionStub.Add(m.group(3), Double.valueOf(m.group(4)), transactionNum);
+					TransactionStub.Add(name, Double.valueOf(m.group(4)), transactionNum);
 					break;
 				case "QUOTE":
-					TransactionStub.Quote_CMD(m.group(3), m.group(4), transactionNum);
+					TransactionStub.Quote_CMD(name, m.group(4), transactionNum);
 					break;
 				case "BUY":
-					TransactionStub.Buy(m.group(3), m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					TransactionStub.Buy(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "COMMIT_BUY":
-					TransactionStub.CommitBuy(m.group(3), transactionNum);
+					TransactionStub.CommitBuy(name, transactionNum);
 					break;
 				case "CANCEL_BUY":
-					TransactionStub.CancelBuy(m.group(3), transactionNum);
+					TransactionStub.CancelBuy(name, transactionNum);
 					break;
 				case "SELL":
-					TransactionStub.Sell(m.group(3), m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					TransactionStub.Sell(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "COMMIT_SELL":
-					TransactionStub.CommitSell(m.group(3), transactionNum);
+					TransactionStub.CommitSell(name, transactionNum);
 					break;
 				case "CANCEL_SELL":
-					TransactionStub.CancelSell(m.group(3), transactionNum);
+					TransactionStub.CancelSell(name, transactionNum);
 					break;
 				case "SET_BUY_AMOUNT":
-					TransactionStub.SetBuyAmount(m.group(3), m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					TransactionStub.SetBuyAmount(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "CANCEL_SET_BUY":
-					TransactionStub.CancelSetBuy(m.group(3), m.group(4), transactionNum);
+					TransactionStub.CancelSetBuy(name, m.group(4), transactionNum);
 					break;
 				case "SET_BUY_TRIGGER":
-					TransactionStub.SetBuyTrigger(m.group(3), m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					TransactionStub.SetBuyTrigger(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "SET_SELL_AMOUNT":
-					TransactionStub.SetSellAmount(m.group(3), m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					TransactionStub.SetSellAmount(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "SET_SELL_TRIGGER":
-					TransactionStub.SetSellTrigger(m.group(3), m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					TransactionStub.SetSellTrigger(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "CANCEL_SET_SELL":
-					TransactionStub.CancelSetSell(m.group(3), m.group(4), transactionNum);
+					TransactionStub.CancelSetSell(name, m.group(4), transactionNum);
 					break;
 				case "DUMPLOG":
 					// TODO: Send file to client/admin
 					if (m.group(4) != null)
-						TransactionStub.Dumplog(m.group(3), m.group(4), transactionNum);
+						TransactionStub.Dumplog(name, m.group(4), transactionNum);
 					else
-						TransactionStub.Dumplog(m.group(3), transactionNum);
+						TransactionStub.Dumplog(name, transactionNum);
 					break;
 				case "DISPLAY_SUMMARY":
-					String result = TransactionStub.DisplaySummary(m.group(3), transactionNum);
+					String result = TransactionStub.DisplaySummary(name, transactionNum);
 					// TODO: send result to client
 					break;
 				}
