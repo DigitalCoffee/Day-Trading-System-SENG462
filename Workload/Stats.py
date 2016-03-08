@@ -15,7 +15,7 @@ stock_commands = ["QUOTE",
                   "CANCEL_SET_SELL"]
 
 def main(argv):
-    users = []
+    users = {}
     stocks = {}
     commands = {
         "ADD": 0,
@@ -43,8 +43,11 @@ def main(argv):
     for line in fo:
         m = re.match(command_regex, line.strip())
         commands[m.group(1)] = commands[m.group(1)] + 1
-        if m.group(1) != "DUMPLOG" and m.group(2) not in users:
-            users.append(m.group(2))
+        if m.group(1) != "DUMPLOG":
+            if m.group(2) not in users:
+                users[m.group(2)] = 1
+            else:
+                users[m.group(2)] = users[m.group(2)] + 1
         if m.group(1) in stock_commands:
             if m.group(3) not in stocks:
                 stocks[m.group(3)] = 1
@@ -52,7 +55,7 @@ def main(argv):
                 stocks[m.group(3)] = stocks[m.group(3)] + 1
 
     print "Stats for " + str(len(users)) + " workload:"
-    
+
     print "COMMANDS:"
     print "\tADD: " + str(commands["ADD"])
     print "\tQUOTE: " + str(commands["QUOTE"])

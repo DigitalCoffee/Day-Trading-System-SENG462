@@ -1,7 +1,6 @@
 package Workload;
 
 import java.io.*;
-import java.net.*; //
 import java.lang.*;
 import java.util.*;
 import java.util.regex.*;
@@ -11,7 +10,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.ResponseHandler;
-//import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -28,16 +26,39 @@ private String threadName;
 public List<String> commands;
 public final static String HTTP_HOST = "b150.seng.uvic.ca";
 public final static int HTTP_PORT = 44450;
+private final boolean DEBUG = false;
 
 Worker(String name)
 {
 	threadName = name;
 	commands = new ArrayList<String>();
-	System.out.println("Creating thread for user " + threadName);
+	if (DEBUG) System.out.println("Creating thread for user " + threadName);
 }
+
+public String send(CloseableHttpClient httpclient, URI httpServer, String command) throws Exception
+{
+	HttpPost httppost = new HttpPost(httpServer);
+	ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
+		public String handleResponse(final HttpResponse response) throws ClientProtocolException, IOException
+		{
+			int status = response.getStatusLine().getStatusCode();
+
+			if (status >= 200 && status < 300) {
+				HttpEntity entity = response.getEntity();
+				return entity != null ? EntityUtils.toString(entity) : null;
+			} else {
+				throw new ClientProtocolException("Unexpected response status: " + status);
+			}
+		}
+	};
+	StringEntity entity = new StringEntity(command, ContentType.create("text/plain", "UTF-8"));
+	httppost.setEntity(entity);
+	return httpclient.execute(httppost, responseHandler);
+}
+
 public void run()
 {
-	System.out.println("Running commands for user " + threadName);
+	if (DEBUG) System.out.println("Running commands for user " + threadName);
 	CloseableHttpClient httpclient = HttpClients.createDefault();
 	try {
 		URI httpServer = new URIBuilder()
@@ -47,26 +68,8 @@ public void run()
 				 .setPath("/")
 				 .build();
 		for (int i = 0; i < commands.size(); i++) {
-			String cmd = commands.get(i);
-			HttpPost httppost = new HttpPost(httpServer);
-			ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
-				public String handleResponse(final HttpResponse response) throws ClientProtocolException, IOException
-				{
-					int status = response.getStatusLine().getStatusCode();
-
-					if (status >= 200 && status < 300) {
-						HttpEntity entity = response.getEntity();
-						return entity != null ? EntityUtils.toString(entity) : null;
-					} else {
-						throw new ClientProtocolException("Unexpected response status: " + status);
-					}
-				}
-			};
-			StringEntity entity = new StringEntity(cmd, ContentType.create("text/plain", "UTF-8"));
-			httppost.setEntity(entity);
-			System.out.println("Thread: " + threadName + ", sending " + cmd);
-			String responseBody = httpclient.execute(httppost, responseHandler);
-			//CloseableHttpResponse response = httpclient.execute(httppost);
+			if (DEBUG) System.out.println("Thread: " + threadName + ", sending " + commands.get(i));
+			send(httpclient, httpServer, commands.get(i));
 		}
 	} catch (Exception e) {
 		System.err.println("Thread for user " + threadName + " threw exception:\n" + e.getMessage());
@@ -76,7 +79,7 @@ public void run()
 	} catch (IOException e) {
 		System.err.println("Could not close HTTP connection");
 	}
-	System.out.println("Thread for user " + threadName + " exiting.");
+	if (DEBUG) System.out.println("Thread for user " + threadName + " exiting.");
 }
 
 public void start()
@@ -124,7 +127,6 @@ public static void main(String args[])
 					String username = m.group(2).trim();
 					Worker user;
 					if (!workers.containsKey(username)){
-						System.out.println("New user " + workers.size() + ": " + username);
 						user = new Worker(username);
 					} else
 						user = workers.get(username);
