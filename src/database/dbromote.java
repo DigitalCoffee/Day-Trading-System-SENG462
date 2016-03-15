@@ -18,7 +18,7 @@ import javax.xml.transform.stream.StreamResult;
 import Interface.Database;
 import Transaction.Buy;
 import Transaction.Sell;
-import Transaction.Quote;
+import quote.Quote;
 
 public class Dbremote extends UnicastRemoteObject implements Database{
     private static Connection c = null;
