@@ -30,6 +30,7 @@ public class NamingServer {
 		} catch (Exception e) {
 			System.err.println(e);
 		} finally {
+			System.out.println("Quitting...");
 			System.exit(1);
 		}
 	}

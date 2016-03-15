@@ -1,7 +1,9 @@
 /**
  * 
  */
-package Transaction;
+package transaction;
+
+import quote.Quote;
 
 /**
  * @author andrew

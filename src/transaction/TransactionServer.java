@@ -7,6 +7,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 import Interface.Audit;
+import Interface.Database;
 import Interface.Naming;
 import Interface.QuoteCache;
 import Interface.Transaction;
@@ -49,6 +50,17 @@ public class TransactionServer {
 					: namingRegistry;
 			Audit auditStub = (Audit) auditRegistry.lookup(Audit.LOOKUPNAME);
 
+			// Get the Database Stub loaded
+			System.out.println("Looking up Database in Naming Server");
+			String dbHost = namingStub.Lookup(Database.LOOKUPNAME);
+			if (dbHost == null) {
+				System.err.println("Quote Cache host not found.");
+				System.exit(1);
+			}
+			Registry dbRegistry = !debug ? LocateRegistry.getRegistry(dbHost, Naming.RMI_REGISTRY_PORT)
+					: namingRegistry;
+			Database dbStub = (Database) dbRegistry.lookup(Database.LOOKUPNAME);
+
 			// Get the Quote Cache Server Stub loaded
 			System.out.println("Looking up Quote Cache Server in Naming Server");
 			String cacheHost = namingStub.Lookup(QuoteCache.LOOKUPNAME);
@@ -63,7 +75,7 @@ public class TransactionServer {
 			// Bind to RMI registry
 			Registry registry = !debug ? LocateRegistry.createRegistry(44459) : namingRegistry;
 			Transaction stub = (Transaction) UnicastRemoteObject
-					.exportObject(new TransactionRemote(auditStub, cacheStub), Transaction.RMI_PORT);
+					.exportObject(new TransactionRemote(auditStub, dbStub, cacheStub), Transaction.RMI_PORT);
 			registry.rebind(Transaction.LOOKUPNAME, stub);
 			System.out.println("Transaction Server bound.");
 

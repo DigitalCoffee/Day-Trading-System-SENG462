@@ -23,6 +23,11 @@
 				<attribute name="Main-Class" value="quote.QuoteCacheServer" />
 			</manifest>
 		</jar>
+		<jar destfile="jar/db.jar" basedir="${build.dir}" includes="database/*.class Interface/Database.class Interface/Naming.class quote/Quote.class transaction/Buy.class transaction/Sell.class naming/*_Stub.class audit/*_Stub.class">
+			<manifest>
+				<attribute name="Main-Class" value="database.DBServer" />
+			</manifest>
+		</jar>
 		<jar destfile="jar/transaction.jar" basedir="${build.dir}" includes="transaction/*.class Interface/*.class exception/*.class quote/Quote.class **/*_Stub.class" excludes="transaction/*_Stub.class">
 			<manifest>
 				<attribute name="Main-Class" value="transaction.TransactionServer" />
@@ -33,14 +38,14 @@
 				<attribute name="Main-Class" value="http.HTTPServer" />
 			</manifest>
 		</jar>
-		
+
 		<path id="build-classpath">
-		    <fileset dir="${basedir}/lib">
-		        <include name="*.jar"/>
-		    </fileset>
+			<fileset dir="${basedir}/lib">
+				<include name="*.jar" />
+			</fileset>
 		</path>
 		<manifestclasspath property="lib.list" jarfile="${basedir}/jar/workload.jar">
-		    <classpath refid="build-classpath"/>
+			<classpath refid="build-classpath" />
 		</manifestclasspath>
 		<jar destfile="jar/workload.jar" basedir="${build.dir}" includes="workload/*.class">
 			<manifest>

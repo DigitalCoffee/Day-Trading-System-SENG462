@@ -7,9 +7,9 @@ import java.rmi.RemoteException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Interface.Audit;
+import Interface.Database;
 import Interface.QuoteCache;
 import Interface.Transaction;
-import exception.NegativeMoneyException;
 import exception.NegativeStockException;
 import quote.Quote;
 
@@ -28,19 +28,22 @@ public class TransactionRemote implements Transaction {
 
 	// Quote Cache Server for getting quotes
 	protected static QuoteCache QUOTE_CACHE_STUB = null;
+	
+	protected static Database DB_STUB = null;
 
 	// HashMap of users who have sent commands
 	private static ConcurrentHashMap<String, User> USERS;
 
 	// Server name. For logging.
-	public static String serverName = "TS1";
+	public static String serverName = "TS";
 
 	/**
 	 * @param arg0
 	 * @throws RemoteException
 	 */
-	public TransactionRemote(Audit auditStub, QuoteCache quoteStub) {
+	public TransactionRemote(Audit auditStub, Database dbStub, QuoteCache quoteStub) {
 		AUDIT_STUB = auditStub;
+		DB_STUB = dbStub;
 		QUOTE_CACHE_STUB = quoteStub;
 		USERS = new ConcurrentHashMap<String, User>();
 	}
@@ -141,6 +144,10 @@ public class TransactionRemote implements Transaction {
 				DB_STUB.set("update users set account=account +"+amount+"where id=/'"+userid+"/'");
 			}
 		}catch(Exception e){
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"ADD", userid, Double.toString(amount), null, null, "DB connection error");
+			return false;
+		}
 			
 		// Find/create user and add money to their account
 		/*if (USERS.containsValue(userid)) {
@@ -169,27 +176,29 @@ public class TransactionRemote implements Transaction {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "BUY",
 				userid, Double.toString(amount), stockSymbol, null, null);
 		try{
-			Quote q = GetQuote(userid,stockSymbol,transactionNum);
+			Quote q = FindQuote(userid,stockSymbol,transactionNum, "BUY");
 			return DB_STUB.buy(userid,stockSymbol,amount,q);
 		}catch(Exception e){
-			return false;
-		}
-		// Check if user exists
-		if (USERS.containsKey(userid)) {
-			// Confirm that user has enough money
-			if (USERS.get(userid).account.money.revert() < amount) {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"BUY", userid, Double.toString(amount), stockSymbol, null, "User does have enough money");
-				return false;
-			}
-			Quote q = FindQuote(userid, stockSymbol, transactionNum, "BUY");
-			USERS.get(userid).buys.push(new Buy(amount, stockSymbol, q));
-			return true;
-		} else {
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 					"BUY", userid, Double.toString(amount), stockSymbol, null, "User does not exist");
 			return false;
 		}
+//		// Check if user exists
+//		if (USERS.containsKey(userid)) {
+//			// Confirm that user has enough money
+//			if (USERS.get(userid).account.money.revert() < amount) {
+//				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+//						"BUY", userid, Double.toString(amount), stockSymbol, null, "User does have enough money");
+//				return false;
+//			}
+//			Quote q = FindQuote(userid, stockSymbol, transactionNum, "BUY");
+//			USERS.get(userid).buys.push(new Buy(amount, stockSymbol, q));
+//			return true;
+//		} else {
+//			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+//					"BUY", userid, Double.toString(amount), stockSymbol, null, "User does not exist");
+//			return false;
+//		}
 	}
 
 	/*

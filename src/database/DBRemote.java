@@ -1,33 +1,23 @@
 package database;
 
 import Interface.Database;
-import java.io.File;
-import java.rmi.*;
-import java.rmi.server.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
+import java.util.concurrent.ConcurrentHashMap;
 
-import Interface.Database;
-import Transaction.Buy;
-import Transaction.Sell;
+import transaction.Buy;
+import transaction.Sell;
 import quote.Quote;
 
-public class Dbremote extends UnicastRemoteObject implements Database{
+public class DBRemote implements Database{
     private static Connection c = null;
-    private static HashMap<String,Stack<Buy>> buys;
-    private static HashMap<String,Stack<Sell>>sells;
-public static final int RMI_TCP_PORT = 44458;
-	public Dbremote() throws RemoteException
+    private static ConcurrentHashMap<String,Stack<Buy>> buys;
+    private static ConcurrentHashMap<String,Stack<Sell>>sells;
+	public DBRemote()
 	{
-		super(RMI_TCP_PORT);
 		try {
 	         Class.forName("org.postgresql.Driver");
 	         c = DriverManager

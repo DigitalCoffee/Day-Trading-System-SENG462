@@ -16,6 +16,9 @@ stock_commands = ["QUOTE",
 
 def main(argv):
     users = {}
+    accounts = {}
+    errors = 0;
+    error_cmds = []
     stocks = {}
     commands = {
         "ADD": 0,
@@ -37,12 +40,16 @@ def main(argv):
         }
 
     if not sys.argv[1]:
-        print "Please provide the path to the workload file"
+        print "Please provide the path to the workload file."
         sys.exit(0)
     fo = open(argv[1], "r+")
     for line in fo:
         m = re.match(command_regex, line.strip())
         commands[m.group(1)] = commands[m.group(1)] + 1
+        if m.group(1) == "ADD":
+            if not m.group(2) in accounts:
+                accounts[m.group(2)] = {}
+                accounts[m.group(2)]["money"] = float(m.group(3))
         if m.group(1) != "DUMPLOG":
             if m.group(2) not in users:
                 users[m.group(2)] = 1
@@ -79,6 +86,8 @@ def main(argv):
 
     print "UNIQUE STOCK SYMBOLS: " + str(len(stocks))
     print stocks
+
+    print accounts
 
 if __name__ == "__main__":
    main(sys.argv)
