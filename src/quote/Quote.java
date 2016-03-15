@@ -32,4 +32,20 @@ public class Quote implements Serializable {
 	public boolean isValid() {
 		return ((System.currentTimeMillis() - timestamp) < QUOTE_USE_MILLIS);
 	}
+	public boolean isValid(){
+		return ((System.currentTimeMillis()-timestamp) < 60000);
+	}
+	public String getStock(){
+		return this.stock;
+	}
+	public double getAmount(){
+		return this.amount;
+	}
+	public long getTimestamp(){
+		return this.timestamp;
+	}
+	public String getCKey(){
+		return this.cryptokey;
+	}
+}
 }
