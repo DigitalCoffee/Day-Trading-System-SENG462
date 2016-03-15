@@ -166,6 +166,7 @@ class Quote {
 String stock;
 double amount;
 long timestamp;
+long quote_timestamp;
 String cryptokey;
 
 public Quote(String stock, double amount, long timestamp, String cryptokey)
@@ -173,17 +174,19 @@ public Quote(String stock, double amount, long timestamp, String cryptokey)
 	//this.user = user; TODO: add when there are multiple users
 	this.stock = stock;
 	this.amount = amount;
-	this.timestamp = timestamp;
+	this.timestamp = System.currentTimeMillis();
+	this.quote_timestamp = timestamp;
 	this.cryptokey = cryptokey;
 }
 	public boolean isValid(){
-		return ((new Date().getTime()-timestamp)>60000);
+		return ((System.currentTimeMillis()-timestamp) < 60000);
 	}
 }
 class Buy{
 	String symbol;
 	Quote q;
 	Money amount;
+	long timestamp;
 	public Buy(double amount, String stock,Quote q){
 		this.amount=new Money(amount);
 		this.symbol=stock;

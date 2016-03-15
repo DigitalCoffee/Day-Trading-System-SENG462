@@ -70,12 +70,16 @@ static String convertStreamToString(java.io.InputStream is)
 
 public void run()
 {
+	String response = null;
+	int code = 0;
+
 	// Reading Command CODE
 	try{
 		String cmd = convertStreamToString(exchange.getRequestBody());
 		if (cmd == null) {
 			System.err.println("FAILURE");
-			System.exit(1);
+			response = "FAILURE";
+			code = 500;
 		}
 
 		Pattern p = Pattern.compile(INPUT_REGEX);
@@ -85,52 +89,56 @@ public void run()
 			String command = m.group(2).trim();
 			String name = m.group(3).trim(); //Generally userid, but can be filename for DUMPLOG
 			try{
+				boolean success = false;
+				String result = null;
 				switch (command) {
 				default:
 					System.err.println("Invalid command");
 					//TODO Tell client that their command was invalid.
+					response = "INVALID COMMAND";
+					code = 500;
 					break;
 				case "ADD":
-					TransactionStub.Add(name, Double.valueOf(m.group(4)), transactionNum);
+					success = TransactionStub.Add(name, Double.valueOf(m.group(4)), transactionNum);
 					break;
 				case "QUOTE":
-					TransactionStub.Quote_CMD(name, m.group(4), transactionNum);
+					result = TransactionStub.Quote_CMD(name, m.group(4), transactionNum);
 					break;
 				case "BUY":
-					TransactionStub.Buy(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					success = TransactionStub.Buy(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "COMMIT_BUY":
-					TransactionStub.CommitBuy(name, transactionNum);
+					result = TransactionStub.CommitBuy(name, transactionNum);
 					break;
 				case "CANCEL_BUY":
-					TransactionStub.CancelBuy(name, transactionNum);
+					result = TransactionStub.CancelBuy(name, transactionNum);
 					break;
 				case "SELL":
-					TransactionStub.Sell(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					success = TransactionStub.Sell(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "COMMIT_SELL":
-					TransactionStub.CommitSell(name, transactionNum);
+					result = TransactionStub.CommitSell(name, transactionNum);
 					break;
 				case "CANCEL_SELL":
-					TransactionStub.CancelSell(name, transactionNum);
+					result = TransactionStub.CancelSell(name, transactionNum);
 					break;
 				case "SET_BUY_AMOUNT":
-					TransactionStub.SetBuyAmount(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					success = TransactionStub.SetBuyAmount(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "CANCEL_SET_BUY":
-					TransactionStub.CancelSetBuy(name, m.group(4), transactionNum);
+					success = TransactionStub.CancelSetBuy(name, m.group(4), transactionNum);
 					break;
 				case "SET_BUY_TRIGGER":
-					TransactionStub.SetBuyTrigger(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					success = TransactionStub.SetBuyTrigger(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "SET_SELL_AMOUNT":
-					TransactionStub.SetSellAmount(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					success = TransactionStub.SetSellAmount(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "SET_SELL_TRIGGER":
-					TransactionStub.SetSellTrigger(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+					success = TransactionStub.SetSellTrigger(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 					break;
 				case "CANCEL_SET_SELL":
-					TransactionStub.CancelSetSell(name, m.group(4), transactionNum);
+					success = TransactionStub.CancelSetSell(name, m.group(4), transactionNum);
 					break;
 				case "DUMPLOG":
 					// TODO: Send file to client/admin
@@ -138,26 +146,36 @@ public void run()
 						TransactionStub.Dumplog(name, m.group(4), transactionNum);
 					else
 						TransactionStub.Dumplog(name, transactionNum);
+					success = true;
 					break;
 				case "DISPLAY_SUMMARY":
-					String result = TransactionStub.DisplaySummary(name, transactionNum);
+					result = TransactionStub.DisplaySummary(name, transactionNum);
 					// TODO: send result to client
 					break;
 				}
+				if (result != null) System.out.println(result);
+				response = (result != null) ? result : Boolean.toString(success);
+				code = 200;
 			} catch (RemoteException e) {
 				System.err.println("Transaction server RMI connection exception");
-				System.exit(1);
+				response = "RMI FAILURE";
+				code = 500;
 			}
 		} else {
-			//TODO Tell client that their command was invalid.
+			System.err.println("Command not found.");
+				System.err.println("Transaction server RMI connection exception");
+				response = "INVALID";
+				code = 500;
 		}
 	} catch (Exception e) {
 		System.err.println("Failed command");
+		e.printStackTrace();
+		response = "FAILURE";
+		code = 500;
 	}
 	// TODO: Send response to client
 	try{
-		String response = "This is the response";
-		exchange.sendResponseHeaders(200, response.length());
+		exchange.sendResponseHeaders(code, response.length());
 		OutputStream os = exchange.getResponseBody();
 		os.write(response.getBytes());
 		os.close();

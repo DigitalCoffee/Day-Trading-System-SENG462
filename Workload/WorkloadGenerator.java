@@ -142,6 +142,11 @@ public static void main(String args[])
 		System.exit(1);
 	}
 
+	// Wait for start command
+	System.out.println("User swarm ready! Press ENTER to begin...");
+	System.out.print("Profiliing tools can be set up at this point");
+	System.in.read();
+
 	// Start all the threads
 	Iterator it = workers.entrySet().iterator();
 	while (it.hasNext()) {
