@@ -1,9 +1,7 @@
 /**
  * 
  */
-package transaction;
-
-import quote.Quote;
+package Transaction;
 
 /**
  * @author andrew
@@ -19,5 +17,14 @@ public class Buy {
 		this.amount = new Money(amount);
 		this.symbol = stock;
 		this.quote = quote;
+	}
+	public double getamount(){
+		return this.amount.revert();
+	}
+	public Quote getQuote(){
+		return this.quote;
+	}
+	public String getStk(){
+		return this.symbol;
 	}
 }
