@@ -134,9 +134,16 @@ public class TransactionRemote implements Transaction {
 					"ADD", userid, Double.toString(amount), null, null, "User does not exist");
 			return false;
 		}
-
+		try{
+			if(DB_STUB.get("select * from users where name='"+userid+"'").next()){
+				DB_STUB.set("Insert into users("+userid+","+amount+");");
+			}else{
+				DB_STUB.set("update users set account=account +"+amount+"where id=/'"+userid+"/'");
+			}
+		}catch(Exception e){
+			
 		// Find/create user and add money to their account
-		if (USERS.containsValue(userid)) {
+		/*if (USERS.containsValue(userid)) {
 			USERS.get(userid).account.money.add(amount);
 		} else {
 			User user = new User(userid);
@@ -145,7 +152,7 @@ public class TransactionRemote implements Transaction {
 			if (DEBUG)
 				Log("debugEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 						"ADD", userid, null, null, null, "Added user");
-		}
+		}*/
 		Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"add", userid, Double.toString(amount), null, null, null);
 		return true;
@@ -161,7 +168,12 @@ public class TransactionRemote implements Transaction {
 	public boolean Buy(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "BUY",
 				userid, Double.toString(amount), stockSymbol, null, null);
-
+		try{
+			Quote q = GetQuote(userid,stockSymbol,transactionNum);
+			return DB_STUB.buy(userid,stockSymbol,amount,q);
+		}catch(Exception e){
+			return false;
+		}
 		// Check if user exists
 		if (USERS.containsKey(userid)) {
 			// Confirm that user has enough money
@@ -189,7 +201,16 @@ public class TransactionRemote implements Transaction {
 	public String CommitBuy(String userid, long transactionNum) throws RemoteException, Exception {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"COMMIT_BUY", userid, null, null, null, null);
-
+				
+		return DB_STUB.buycom(userid);
+		/*
+		try{
+			Quote q = GetQuote(userid,stockSymbol,transactionNum);
+			return DB_STUB.buy(userid,stockSymbol,amount,q);
+		}catch(Exception e){
+			return false;
+		}
+	
 		if (USERS.containsKey(userid)) {
 			Buy b;
 			if (USERS.get(userid).buys.isEmpty()) {
@@ -223,7 +244,7 @@ public class TransactionRemote implements Transaction {
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 					"COMMIT_BUY", userid, null, null, null, "User does not exist");
 			return "USER NOT FOUND";
-		}
+		}*/
 	}
 
 	/*
