@@ -6,13 +6,10 @@ package transaction;
 import java.io.PrintWriter;
 import java.rmi.RemoteException;
 import java.sql.ResultSet;
-import java.util.concurrent.ConcurrentHashMap;
-
 import Interface.Audit;
 import Interface.Database;
 import Interface.QuoteCache;
 import Interface.Transaction;
-import exception.NegativeStockException;
 import quote.Quote;
 
 /**
@@ -31,10 +28,8 @@ public class TransactionRemote implements Transaction {
 	// Quote Cache Server for getting quotes
 	protected static QuoteCache QUOTE_CACHE_STUB = null;
 
+	// Database stub for data persistence
 	protected static Database DB_STUB = null;
-
-	// HashMap of users who have sent commands
-	private static ConcurrentHashMap<String, User> USERS;
 
 	// Server name. For logging.
 	public static String serverName = "TS";
@@ -47,7 +42,6 @@ public class TransactionRemote implements Transaction {
 		AUDIT_STUB = auditStub;
 		DB_STUB = dbStub;
 		QUOTE_CACHE_STUB = quoteStub;
-		USERS = new ConcurrentHashMap<String, User>();
 	}
 
 	/**

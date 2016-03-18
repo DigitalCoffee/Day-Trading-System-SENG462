@@ -1,7 +1,7 @@
 /**
  * 
  */
-package Transaction;
+package transaction;
 
 /**
  * @author andrew
