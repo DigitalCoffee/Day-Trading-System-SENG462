@@ -20,4 +20,13 @@ public class Sell {
 		this.symbol = stock;
 		this.quote = quote;
 	}
+	public Quote getQuote(){
+		return this.quote;
+	}
+	public double getAmount(){
+		return this.amount.revert();
+	}
+	public String getStk(){
+		return this.symbol;
+	}
 }
