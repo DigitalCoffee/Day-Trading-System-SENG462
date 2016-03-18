@@ -6,13 +6,13 @@ For Distributed Systems (SENG 462) course at UVic
 
 
 #### TCP Port usage list (TODO):
-* **44450**: HTTP communication between Workload Generator(s) and HTTP Server(s)
+* **44450**: RMI Registry / HTTP communication between Workload Generator(s) and HTTP Server(s)
 * **44451**: 
 * **44452**: 
 * **44453**: 
 * **44454**: 
-* **44455**: 
-* **44456**: 
-* **44457**: 
-* **44458**: 
-* **44459**: RMI Registry
+* **44455**: Transaction Server(s)
+* **44456**: Quote Cache Server
+* **44457**: Database
+* **44458**: Audit Server
+* **44459**: Naming Server

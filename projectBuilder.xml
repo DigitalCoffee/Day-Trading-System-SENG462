@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<project name="Day-Trading-System-SENG462" default="post-compile">
+
+	<property file="build.properties" />
+	<property name="build.dir" location="bin" />
+	<target name="post-compile">
+		<rmic base="${build.dir}" stubversion="1.2" includes="**/*Remote.class" />
+	</target>
+
+	<target name="export-jars">
+		<jar destfile="jar/naming.jar" basedir="${build.dir}" includes="naming/*.class Interface/Naming.class">
+			<manifest>
+				<attribute name="Main-Class" value="naming.NamingServer" />
+			</manifest>
+		</jar>
+		<jar destfile="jar/audit.jar" basedir="${build.dir}" includes="audit/*.class Interface/Audit.class Interface/Naming.class naming/*_Stub.class">
+			<manifest>
+				<attribute name="Main-Class" value="audit.AuditServer" />
+			</manifest>
+		</jar>
+		<jar destfile="jar/quote.jar" basedir="${build.dir}" includes="quote/*.class Interface/*.class naming/*_Stub.class audit/*_Stub.class" excludes="transaction/*_Stub.class">
+			<manifest>
+				<attribute name="Main-Class" value="quote.QuoteCacheServer" />
+				<attribute name="Class-Path" value="${lib.db}" />
+			</manifest>
+		</jar>
+
+		<path id="db-classpath">
+			<fileset dir="${basedir}/lib">
+				<include name="postgresql*.jar" />
+			</fileset>
+		</path>
+		<manifestclasspath property="lib.db" jarfile="${basedir}/jar/db.jar">
+			<classpath refid="db-classpath" />
+		</manifestclasspath>
+		<jar destfile="jar/db.jar" basedir="${build.dir}" includes="database/*.class Interface/Database.class Interface/Naming.class quote/Quote.class transaction/Buy.class transaction/Sell.class naming/*_Stub.class audit/*_Stub.class">
+			<manifest>
+				<attribute name="Main-Class" value="database.DBServer" />
+			</manifest>
+		</jar>
+
+		<jar destfile="jar/transaction.jar" basedir="${build.dir}" includes="transaction/*.class Interface/*.class exception/*.class quote/Quote.class **/*_Stub.class" excludes="transaction/*_Stub.class">
+			<manifest>
+				<attribute name="Main-Class" value="transaction.TransactionServer" />
+			</manifest>
+		</jar>
+		<jar destfile="jar/http.jar" basedir="${build.dir}" includes="http/*.class Interface/Naming.class Interface/Transaction.class naming/*_Stub.class transaction/*_Stub.class">
+			<manifest>
+				<attribute name="Main-Class" value="http.HTTPServer" />
+			</manifest>
+		</jar>
+
+		<path id="build-classpath">
+			<fileset dir="${basedir}/lib">
+				<include name="*.jar" />
+				<exclude name="postgresql*.jar" />
+			</fileset>
+		</path>
+		<manifestclasspath property="lib.list" jarfile="${basedir}/jar/workload.jar">
+			<classpath refid="build-classpath" />
+		</manifestclasspath>
+		<jar destfile="jar/workload.jar" basedir="${build.dir}" includes="workload/*.class">
+			<manifest>
+				<attribute name="Main-Class" value="workload.WorkloadGenerator" />
+				<attribute name="Class-Path" value="${lib.list}" />
+			</manifest>
+		</jar>
+	</target>
+
+</project>
