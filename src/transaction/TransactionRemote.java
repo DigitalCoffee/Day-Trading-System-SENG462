@@ -5,6 +5,7 @@ package transaction;
 
 import java.io.PrintWriter;
 import java.rmi.RemoteException;
+import java.sql.ResultSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Interface.Audit;
@@ -366,6 +367,7 @@ public class TransactionRemote implements Transaction {
 		// TODO
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DUMPLOG", userid, null, null, filename, null);
+		ResultSet s=DB_STUB.get("select* from users;");
 		try {
 			PrintWriter w = new PrintWriter(filename, "UTF-8");
 			while (s.next()) {
