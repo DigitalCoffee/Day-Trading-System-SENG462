@@ -93,6 +93,7 @@ public class TransactionRemote implements Transaction {
 		if (q.fromCache)
 			Log("systemEvent", Long.toString(System.currentTimeMillis()), QuoteCache.SERVER_NAME,
 					Long.toString(transactionNum), command, userid, null, stockSymbol, null, null);
+		DB_STUB.checkTriggers(stockSymbol, amount,quote);
 		return q;
 	}
 
@@ -132,34 +133,31 @@ public class TransactionRemote implements Transaction {
 
 		// Cannot add negative money. TODO: make this check part of the add
 		// method?
+		public boolean Add(String userid, double amount, long transactionNum) throws RemoteException {
+		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "ADD",
+				userid, Double.toString(amount), null, null, null);
+
+		// Cannot add negative money. TODO: make this check part of the add
+		// method?
 		if (amount < 0.00) {
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 					"ADD", userid, Double.toString(amount), null, null, "User does not exist");
 			return false;
 		}
+
+		// Find/create user and add money to their account
 		try{
-			if(DB_STUB.get("select * from users where name='"+userid+"'").next()){
-				DB_STUB.set("Insert into users("+userid+","+amount+");");
-			}else{
-				DB_STUB.set("update users set account=account +"+amount+"where id=/'"+userid+"/'");
-			}
+		if(DB_STUB.get("select * from users where name='"+userid+"'").next()){
+			DB_STUB.set("Insert into users("+userid+","+amount+");");
+		}else{
+			DB_STUB.set("update users set account=account +"+amount+"where id=/'"+userid+"/'");
+		}
 		}catch(Exception e){
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"ADD", userid, Double.toString(amount), null, null, "DB connection error");
-			return false;
+			
 		}
 			
 		// Find/create user and add money to their account
-		/*if (USERS.containsValue(userid)) {
-			USERS.get(userid).account.money.add(amount);
-		} else {
-			User user = new User(userid);
-			user.account.money.add(amount);
-			USERS.put(userid, user);
-			if (DEBUG)
-				Log("debugEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"ADD", userid, null, null, null, "Added user");
-		}*/
+		
 		Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"add", userid, Double.toString(amount), null, null, null);
 		return true;
@@ -175,12 +173,12 @@ public class TransactionRemote implements Transaction {
 	public boolean Buy(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "BUY",
 				userid, Double.toString(amount), stockSymbol, null, null);
+
+		// Check if user exists
 		try{
-			Quote q = FindQuote(userid,stockSymbol,transactionNum, "BUY");
-			return DB_STUB.buy(userid,stockSymbol,amount,q);
+		Quote q = GetQuote(userid,stockSymbol,transactionNum);
+		return DB_STUB.buy(userid,stockSymbol,amount,q);
 		}catch(Exception e){
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"BUY", userid, Double.toString(amount), stockSymbol, null, "User does not exist");
 			return false;
 		}
 //		// Check if user exists
@@ -210,50 +208,10 @@ public class TransactionRemote implements Transaction {
 	public String CommitBuy(String userid, long transactionNum) throws RemoteException, Exception {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"COMMIT_BUY", userid, null, null, null, null);
-				
+
 		return DB_STUB.buycom(userid);
 		/*
-		try{
-			Quote q = GetQuote(userid,stockSymbol,transactionNum);
-			return DB_STUB.buy(userid,stockSymbol,amount,q);
-		}catch(Exception e){
-			return false;
-		}
-	
-		if (USERS.containsKey(userid)) {
-			Buy b;
-			if (USERS.get(userid).buys.isEmpty()) {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"COMMIT_BUY", userid, null, null, null, "User has no pending buys");
-				return "BUY STACK EMPTY";
-			} else {
-				b = USERS.get(userid).buys.pop();
-				if (b.quote == null || !b.quote.isValid()) {
-					Quote q = FindQuote(userid, b.symbol, transactionNum, "COMMIT_BUY");
-					b.quote = q;
-					System.out.println("Old quote invalid");
-				}
-				try {
-					USERS.get(userid).account.money.subtract(b.amount.toInt() - (b.amount.toInt() % b.quote.amount));
-					Stock s;
-					if (!USERS.get(userid).account.stock.containsKey(b.symbol)) {
-						s = new Stock();
-						USERS.get(userid).account.stock.put(b.symbol, s);
-					}
-					USERS.get(userid).account.stock.get(b.symbol).add((int) (b.amount.toInt() / b.quote.amount));
-				} catch (NegativeMoneyException e) {
-					Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
-							Long.toString(transactionNum), "COMMIT_BUY", userid, null, null, null,
-							"User does not have enough money");
-					return "Not enough money in the account";
-				}
-				return "Buy completed";
-			}
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"COMMIT_BUY", userid, null, null, null, "User does not exist");
-			return "USER NOT FOUND";
-		}*/
+		
 	}
 
 	/*
@@ -264,26 +222,9 @@ public class TransactionRemote implements Transaction {
 	@Override
 	public String CancelBuy(String userid, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-				"CANCEL_BUY", userid, null, null, null, null);
-
-		String result;
-		if (USERS.containsKey(userid)) {
-			if (!USERS.get(userid).buys.isEmpty()) {
-				USERS.get(userid).buys.pop();
-				result = "Buy Canceled";
-			} else {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"CANCEL_BUY", userid, null, null, null, "Buy stack empty");
-				result = "Buy stack empty";
-			}
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"CANCEL_BUY", userid, null, null, null, "User does not exist");
-			result = "User does not exist";
-		}
-		return result;
-	}
-
+				"CancelBuy", userid, null, null, null, null);
+		
+		return DB_STUB.buycan(userid);
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -292,25 +233,11 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public boolean Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
-		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SELL",
-				userid, Double.toString(amount), stockSymbol, null, null);
-
-		// Confirm that the user exists
-		if (USERS.containsKey(userid)) {
-			// Check if the user owns any of the specified stock
-			if (USERS.get(userid).account.stock.containsKey(stockSymbol)) {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"SELL", userid, Double.toString(amount), stockSymbol, null,
-						"User does not have any of the stock");
+		try{
+			Quote q = GetQuote(userid,stockSymbol,transactionNum);
+			return DB_STUB.sell(userid,stockSymbol,amount,q);
+		}catch(Exception e){
 				return false;
-			}
-			Quote q = FindQuote(userid, stockSymbol, transactionNum, "SELL");
-			USERS.get(userid).sells.push(new Sell(amount, stockSymbol, q));
-			return true;
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"SELL", userid, Double.toString(amount), stockSymbol, null, "User does not exist");
-			return false;
 		}
 	}
 
@@ -321,38 +248,7 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public String CommitSell(String userid, long transactionNum) throws RemoteException, Exception {
-		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-				"COMMIT_SELL", userid, null, null, null, null);
-
-		if (USERS.containsKey(userid)) {
-			if (USERS.get(userid).sells.isEmpty())
-				return "Sell Stack Empty";
-			Sell s = USERS.get(userid).sells.pop();
-			if (!s.quote.isValid()) {
-				s.quote = FindQuote(userid, s.quote.stock, transactionNum, "COMMIT_SELL");
-				System.out.println("Old Sell Quote invalid, replacing.");
-			}
-			if (!USERS.get(userid).account.stock.containsKey(s.symbol)
-					|| USERS.get(userid).account.stock.get(s.symbol).shares
-							- (int) (s.amount.toInt() / s.quote.amount) < 0) {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"COMMIT_SELL", userid, null, null, null, "User does not have enough stock");
-				return "Not enough stock";
-			}
-			try {
-				USERS.get(userid).account.money.add(s.amount.toInt() - (s.amount.toInt() % s.quote.amount));
-				USERS.get(userid).account.stock.get(s.symbol).subtract((int) (s.amount.toInt() / s.quote.amount));
-			} catch (NegativeStockException e) {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"COMMIT_SELL", userid, null, null, null, "User does not have enough money");
-				return "Not enough money in the account";
-			}
-			return "Sell Completed";
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"COMMIT_SELL", userid, null, null, null, "User does not exist");
-			return "User Not Found";
-		}
+		return DB_STUB.sellcom(userid);
 	}
 
 	/*
@@ -362,23 +258,7 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public String CancelSell(String userid, long transactionNum) throws RemoteException {
-		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-				"CANCEL_SELL", userid, null, null, null, null);
-
-		if (USERS.containsKey(userid)) {
-			if (USERS.get(userid).sells.isEmpty()) {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"CANCEL_SELL", userid, null, null, null, "User has no pending sells");
-				return "Sell Stack Empty";
-			} else {
-				USERS.get(userid).sells.pop();
-				return "Sell Removed";
-			}
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"CANCEL_SELL", userid, null, null, null, "User does not exist");
-			return "User not found";
-		}
+		return DB_STUB.sellcan(userid);
 	}
 
 	/*
@@ -390,18 +270,7 @@ public class TransactionRemote implements Transaction {
 	@Override
 	public boolean SetBuyAmount(String userid, String stockSymbol, double amount, long transactionNum)
 			throws RemoteException {
-		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-				"SET_BUY_AMOUNT", userid, Double.toString(amount), stockSymbol, null, null);
-
-		if (USERS.containsKey(userid)) {
-			USERS.get(userid).triggers.put(stockSymbol + "B", new Trigger(stockSymbol, amount));
-			return true;
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"SET_BUY_AMOUNT", userid, Double.toString(amount), stockSymbol, null, "Failure");
-			return false;
-		}
-	}
+		return DB_STUB.SBA(userid, stockSymbol, amount);
 
 	/*
 	 * (non-Javadoc)
@@ -413,13 +282,8 @@ public class TransactionRemote implements Transaction {
 	public boolean CancelSetBuy(String userid, String stockSymbol, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "CANCEL_SET_BUY", userid, null, stockSymbol, null, null);
 
-		if (USERS.containsKey(userid) && USERS.get(userid).triggers.containsKey(stockSymbol + "B")) {
-			USERS.get(userid).triggers.remove(stockSymbol + "B");
-			return true;
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "CANCEL_SET_SELL", userid, null, stockSymbol, null, "Failure");
-			return false;
-		}
+		return DB_STUB.CSB(userid,stock);
+		
 	}
 
 	/*
@@ -433,13 +297,8 @@ public class TransactionRemote implements Transaction {
 			throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SET_BUY_TRIGGER", userid, Double.toString(amount), stockSymbol, null, null);
 
-		if (USERS.containsKey(userid) && USERS.get(userid).triggers.containsKey(stockSymbol + "B")) {
-			USERS.get(userid).triggers.get(stockSymbol + "B").amount = amount;
-			return true;
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SET_BUY_TRIGGER", userid, Double.toString(amount), stockSymbol, null, "Failure");
-			return false;
-		}
+		return DB_STUB.SBT(userid,stockSymbol,amount);
+		
 	}
 
 	/*
@@ -453,13 +312,7 @@ public class TransactionRemote implements Transaction {
 			throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SET_SELL_AMOUNT", userid, Double.toString(amount), stockSymbol, null, null);
 
-		if (USERS.containsKey(userid)) {
-			USERS.get(userid).triggers.put(stockSymbol + "S", new Trigger(stockSymbol, amount));
-			return true;
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SET_SELL_AMOUNT", userid, Double.toString(amount), stockSymbol, null, "Failure");
-			return false;
-		}
+		return DB_STUB.SSA(userid, stockSymbol, amount);
 	}
 
 	/*
@@ -472,13 +325,7 @@ public class TransactionRemote implements Transaction {
 	public boolean CancelSetSell(String userid, String stockSymbol, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "CANCEL_SET_SELL", userid, null, stockSymbol, null, null);
 
-		if (USERS.containsKey(userid) && USERS.get(userid).triggers.containsKey(stockSymbol + "S")) {
-			USERS.get(userid).triggers.remove(stockSymbol + "S");
-			return true;
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "CANCEL_SET_SELL", userid, null, stockSymbol, null, "Failure");
-			return false;
-		}
+		return DB_STUB.CSS(userid, stock);
 	}
 
 	/*
@@ -492,13 +339,7 @@ public class TransactionRemote implements Transaction {
 			throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SET_SELL_TRIGGER", userid, Double.toString(amount), stockSymbol, null, null);
 
-		if (USERS.containsKey(userid) && USERS.get(userid).triggers.containsKey(stockSymbol + "S")) {
-			USERS.get(userid).triggers.get(stockSymbol + "S").amount = amount;
-			return true;
-		} else {
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SET_SELL_TRIGGER", userid, Double.toString(amount), stockSymbol, null, "Failure");
-			return false;
-		}
+		return DB_STUB.SST(userid, stockSymbol, amount);
 	}
 
 	/*
@@ -511,6 +352,16 @@ public class TransactionRemote implements Transaction {
 	public void Dumplog(String userid, String filename, long transactionNum) throws RemoteException {
 		// TODO
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "DUMPLOG", userid, null, null, filename, null);
+try{
+			PrintWriter w=new PrintWriter(filename,"UTF-8");
+			while(s.next()){
+				w.println("userid:"+s.getString("id")+",Account balance:"+s.getString("account"));
+			}
+			
+			w.close();
+		}catch(Exception e){
+			System.out.println("ERROR IN DUMPLOG");
+		}
 		return;
 
 	}
