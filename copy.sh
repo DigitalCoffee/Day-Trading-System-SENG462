@@ -5,7 +5,7 @@ if [ -n "$1" ]
 then
     scp jar/naming.jar $1@b153.seng.uvic.ca:/seng/scratch/group5/
     scp jar/audit.jar $1@b135.seng.uvic.ca:/seng/scratch/group5/
-    #scp jar/db.jar $1@b140.seng.uvic.ca:/seng/scratch/group5/
+    scp jar/db.jar $1@b140.seng.uvic.ca:/seng/scratch/group5/
     scp jar/quote.jar $1@b148.seng.uvic.ca:/seng/scratch/group5/
     scp jar/transaction.jar $1@b145.seng.uvic.ca:/seng/scratch/group5/
     scp jar/http.jar $1@b150.seng.uvic.ca:/seng/scratch/group5/

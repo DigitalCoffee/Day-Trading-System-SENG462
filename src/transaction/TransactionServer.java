@@ -54,7 +54,7 @@ public class TransactionServer {
 			System.out.println("Looking up Database in Naming Server");
 			String dbHost = namingStub.Lookup(Database.LOOKUPNAME);
 			if (dbHost == null) {
-				System.err.println("Quote Cache host not found.");
+				System.err.println("Database host not found.");
 				System.exit(1);
 			}
 			Registry dbRegistry = !debug ? LocateRegistry.getRegistry(dbHost, Naming.RMI_REGISTRY_PORT)
