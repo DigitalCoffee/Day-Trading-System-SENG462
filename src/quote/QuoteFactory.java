@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class QuoteFactory extends Thread {
 	private Thread t;
 	public static final String QUOTE_SERVER = "quoteserve.seng.uvic.ca";
-	public static final int QUOTE_PORT = 4443;
+	public static final int QUOTE_PORT = 4445;	// DO NOT CHANGE: Group 5's assigned port.
 	private static final int MAX_QUEUE_SIZE = 50;
 	protected ConcurrentLinkedQueue<Socket> Connections;
 
