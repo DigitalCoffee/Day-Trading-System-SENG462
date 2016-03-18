@@ -11,5 +11,5 @@ then
     scp jar/http.jar $1@b150.seng.uvic.ca:/seng/scratch/group5/
     scp jar/workload.jar $1@b149.seng.uvic.ca:/seng/scratch/group5/
 else
-  echo "Usage: sh run.sh <netlink id>"
+  echo "Usage: sh copy.sh <netlink id>"
 fi
