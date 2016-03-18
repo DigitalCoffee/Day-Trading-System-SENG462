@@ -351,6 +351,7 @@ public class TransactionRemote implements Transaction {
 	@Override
 	public void Dumplog(String userid, String filename, long transactionNum) throws RemoteException {
 		// TODO
+		ResultSet s=DB_STUB.get("select* from users;");
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "DUMPLOG", userid, null, null, filename, null);
 try{
 			PrintWriter w=new PrintWriter(filename,"UTF-8");
