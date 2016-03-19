@@ -73,7 +73,7 @@ public class TransactionServer {
 			QuoteCache cacheStub = (QuoteCache) cacheRegistry.lookup(QuoteCache.LOOKUPNAME);
 
 			// Bind to RMI registry
-			Registry registry = !debug ? LocateRegistry.createRegistry(44459) : namingRegistry;
+			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT) : namingRegistry;
 			Transaction stub = (Transaction) UnicastRemoteObject
 					.exportObject(new TransactionRemote(auditStub, dbStub, cacheStub), Transaction.RMI_PORT);
 			registry.rebind(Transaction.LOOKUPNAME, stub);
