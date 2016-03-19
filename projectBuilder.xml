@@ -21,13 +21,12 @@
 		<jar destfile="jar/quote.jar" basedir="${build.dir}" includes="quote/*.class Interface/*.class naming/*_Stub.class audit/*_Stub.class" excludes="transaction/*_Stub.class">
 			<manifest>
 				<attribute name="Main-Class" value="quote.QuoteCacheServer" />
-				<attribute name="Class-Path" value="${lib.db}" />
 			</manifest>
 		</jar>
 		<jar destfile="jar/db.jar" basedir="${build.dir}" includes="database/*.class Interface/Database.class Interface/Naming.class quote/Quote.class transaction/Buy.class transaction/Sell.class naming/*_Stub.class audit/*_Stub.class">
+			<zipgroupfileset dir="lib" includes="postgresql*.jar" />
 			<manifest>
 				<attribute name="Main-Class" value="database.DBServer" />
-				<zipgroupfileset dir="lib" includes="lib/postgresql*.jar"/>
 			</manifest>
 		</jar>
 
@@ -42,9 +41,9 @@
 			</manifest>
 		</jar>
 		<jar destfile="jar/workload.jar" basedir="${build.dir}" includes="workload/*.class">
+			<zipgroupfileset dir="lib" includes="*.jar" excludes="postgresql*.jar" />
 			<manifest>
 				<attribute name="Main-Class" value="workload.WorkloadGenerator" />
-				<zipgroupfileset dir="lib" includes="*.jar" excludes="lib/postgresql*.jar"/>
 			</manifest>
 		</jar>
 	</target>
