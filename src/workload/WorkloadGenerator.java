@@ -9,7 +9,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -87,9 +87,9 @@ public class WorkloadGenerator {
 		}
 
 		// Start all the threads
-		Iterator it = workers.entrySet().iterator();
+		Iterator<Entry<String, Worker>> it = workers.entrySet().iterator();
 		while (it.hasNext()) {
-			Map.Entry pair = (Map.Entry) it.next();
+			Entry<String, Worker> pair = it.next();
 			Worker current = (Worker) pair.getValue();
 			current.start();
 			it.remove();
