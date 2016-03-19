@@ -76,8 +76,9 @@ public class TransactionRemote implements Transaction {
 	 */
 	protected Quote FindQuote(String userid, String stockSymbol, long transactionNum, String command) {
 		Quote q;
+		boolean forUse = command.equals("QUOTE") ? false: true;
 		try {
-			q = QUOTE_CACHE_STUB.get(userid, stockSymbol, transactionNum);
+			q = QUOTE_CACHE_STUB.get(userid, stockSymbol, transactionNum, forUse);
 		} catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),

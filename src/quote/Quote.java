@@ -10,6 +10,8 @@ import java.io.Serializable;
  *
  */
 public class Quote implements Serializable {
+
+	private static final long serialVersionUID = -1084066173237392366L;
 	public static final long QUOTE_VALID_MILLIS = 60000;
 	public static final long QUOTE_USE_MILLIS = 30000;
 	
@@ -30,6 +32,9 @@ public class Quote implements Serializable {
 	}
 
 	public boolean isValid() {
+		return ((System.currentTimeMillis() - timestamp) < QUOTE_VALID_MILLIS);
+	}
+	public boolean isUsable() {
 		return ((System.currentTimeMillis() - timestamp) < QUOTE_USE_MILLIS);
 	}
 	public String getStock(){

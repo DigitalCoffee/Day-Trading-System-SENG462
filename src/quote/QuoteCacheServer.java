@@ -10,6 +10,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 import Interface.Audit;
+import Interface.Database;
 import Interface.Naming;
 import Interface.QuoteCache;
 
@@ -50,21 +51,19 @@ public class QuoteCacheServer {
 			Audit auditStub = (Audit) auditRegistry.lookup(Audit.LOOKUPNAME);
 
 			// TODO: Find and connect to DB Server via Naming Server
-			// System.out.println("Looking up Database Server in Naming
-			// Server");
-			// String DBHost = namingStub.Lookup(DB.LOOKUPNAME);
-			// if (DBHost == null) {
-			// System.err.println("A required server was not found.");
-			// System.exit(1);
-			// }
-			// Registry DBRegistry = !debug ?
-			// LocateRegistry.getRegistry(auditHost, Naming.RMI_PORT) :
-			// namingRegistry;
-			// DB DBStub = (DB) DBRegistry.lookup(DB.LOOKUPNAME);
+			System.out.println("Looking up Database Server in Naming Server");
+			String DBHost = namingStub.Lookup(Database.LOOKUPNAME);
+			if (DBHost == null) {
+				System.err.println("A required server was not found.");
+				System.exit(1);
+			}
+			Registry DBRegistry = !debug ? LocateRegistry.getRegistry(auditHost, Naming.RMI_REGISTRY_PORT)
+					: namingRegistry;
+			Database DBStub = (Database) DBRegistry.lookup(Database.LOOKUPNAME);
 
 			// Bind to RMI registry
 			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT) : namingRegistry;
-			QuoteCache stub = (QuoteCache) UnicastRemoteObject.exportObject(new QuoteCacheRemote(auditStub, debug),
+			QuoteCache stub = (QuoteCache) UnicastRemoteObject.exportObject(new QuoteCacheRemote(auditStub, DBStub, debug),
 					QuoteCache.RMI_PORT);
 			registry.rebind(QuoteCache.LOOKUPNAME, stub);
 			System.out.println("Quote Cache Server bound.");

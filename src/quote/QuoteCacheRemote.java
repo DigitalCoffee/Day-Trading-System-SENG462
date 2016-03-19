@@ -4,10 +4,13 @@
 package quote;
 
 import java.io.IOException;
+import java.rmi.RemoteException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Interface.Audit;
+import Interface.Database;
 import Interface.QuoteCache;
+import exception.DatabaseException;
 
 /**
  * @author andrew
@@ -16,14 +19,15 @@ import Interface.QuoteCache;
 public class QuoteCacheRemote implements QuoteCache {
 
 	protected static Audit AUDIT_STUB = null;
-	// TODO: protected static DB DB_STUB = null;
+	protected static Database DB_STUB = null;
 	protected static ConcurrentHashMap<String, Quote> QUOTES;
 	protected static QuoteFactory QUOTE_FACTORY;
 
 	public boolean DEBUG;
 
-	public QuoteCacheRemote(Audit stub, boolean debug) {
-		AUDIT_STUB = stub;
+	public QuoteCacheRemote(Audit auditStub, Database DBStub, boolean debug) {
+		AUDIT_STUB = auditStub;
+		DB_STUB = DBStub;
 		QUOTES = new ConcurrentHashMap<String, Quote>();
 		DEBUG = debug;
 		if (!DEBUG) {
@@ -38,16 +42,18 @@ public class QuoteCacheRemote implements QuoteCache {
 	 * @see Interface.QuoteCache#get(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public Quote get(String userid, String stockSymbol, long transactionNum) {
+	public Quote get(String userid, String stockSymbol, long transactionNum, boolean forUse) throws DatabaseException {
 		Quote quote;
-		if (QUOTES.containsKey(stockSymbol) && QUOTES.get(stockSymbol).isValid()) {
+		if (QUOTES.containsKey(stockSymbol) && (!forUse && QUOTES.get(stockSymbol).isValid())
+				|| forUse && QUOTES.get(stockSymbol).isUsable()) {
 			quote = QUOTES.get(stockSymbol);
 			quote.fromCache = true;
 		} else {
 			String get;
 			try {
 				get = !DEBUG ? QUOTE_FACTORY.getQuote(userid, stockSymbol)
-						: "14.99," + stockSymbol+","+ userid+","+Long.toString(System.currentTimeMillis())+",ThisIsAFancyCryptoKey";
+						: "14.99," + stockSymbol + "," + userid + "," + Long.toString(System.currentTimeMillis())
+								+ ",ThisIsAFancyCryptoKey";
 			} catch (IOException e) {
 				System.out.println("Failed to get a quote");
 				return null;
@@ -59,6 +65,19 @@ public class QuoteCacheRemote implements QuoteCache {
 			LogQuote(Long.toString(System.currentTimeMillis()), "QSRV", Long.toString(transactionNum),
 					Double.toString(amount), stockSymbol, userid, Long.toString(timestamp), quote.cryptokey);
 			QUOTES.put(stockSymbol, quote);
+			try {
+				if (!DB_STUB.quote(userid, quote))
+					throw new DatabaseException("Could not store quote in the database");
+			} catch (RemoteException e) {
+				try {
+					AUDIT_STUB.logEvent("errorEvent", Long.toString(System.currentTimeMillis()), SERVER_NAME,
+							Long.toString(transactionNum), "", userid, null, stockSymbol, null,
+							"Could not access database");
+				} catch (RemoteException e2) {
+					System.out.println("Failed to log error. Audit Server inaccessible. Quitting...");
+					System.exit(1);
+				}
+			}
 		}
 		return quote;
 	}
@@ -78,7 +97,7 @@ public class QuoteCacheRemote implements QuoteCache {
 		try {
 			AUDIT_STUB.logQuoteServerHit(timestamp, server, transactionNum, price, stockSymbol, username,
 					quoteServerTime, cryptokey);
-		} catch (Exception e) {
+		} catch (RemoteException e) {
 			System.err.println("Audit server RMI connection exception: " + e.getMessage());
 			e.printStackTrace();
 		}
