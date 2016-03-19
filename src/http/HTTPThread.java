@@ -128,6 +128,10 @@ public class HTTPThread extends Thread {
 					System.err.println("Transaction server RMI connection exception");
 					response = "RMI FAILURE";
 					code = 500;
+				} catch (NumberFormatException e) {
+					System.err.println("Could not parse a dollar amount from: " + cmd);
+					response = "INVALID COMMAND";
+					code = 500;
 				}
 			} else {
 				System.err.println("Command not found.");

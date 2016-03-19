@@ -50,6 +50,9 @@ public class DBRemote implements Database{
 		}
 		return true;
 	}
+	public boolean quote(String userid, Quote q){
+		return set("Insert into quote values('"+userid+"',"+q.getAmount()+","+q.getCKey()+","+q.getTimestamp()+",'"+q.stock+"');");
+	}
 	public void checkTriggers(String stk,double amount,Quote q){
 		ResultSet r = get("select* from trigger where sname='"+stk+"'and bors = 'b'");
 		try{
