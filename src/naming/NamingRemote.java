@@ -18,9 +18,6 @@ public class NamingRemote implements Naming {
 	public static final int RMI_PORT = 44459;
 	private HashMap<String, LinkedList<String>> SERVERS;
 
-	/**
-	 * 
-	 */
 	public NamingRemote() {
 		SERVERS = new HashMap<String, LinkedList<String>>();
 	}

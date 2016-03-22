@@ -16,24 +16,25 @@ public class AuditServer {
 
 	/**
 	 * @param args
+	 *            Pass in an argument to enter debug mode
 	 */
 	public static void main(String[] args) {
 
 		Naming namingStub = null;
 
-		// Pass in an argument to enter debug mode
 		boolean debug = args.length > 0;
 		if (debug)
 			System.out.println("DEBUG MODE");
 
 		try {
+			// Bind to RMI registry
 			System.out.println("Audit Server starting...");
 			Audit stub = (Audit) UnicastRemoteObject.exportObject(new AuditRemote(), Audit.RMI_PORT);
 			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT)
 					: LocateRegistry.getRegistry(Naming.RMI_REGISTRY_PORT);
 			registry.rebind(Audit.LOOKUPNAME, stub);
 			System.out.println("Audit Server bound.");
-			
+
 			// Add hostname to Naming Server
 			System.out.println("Contacting Naming Server...");
 			Registry namingRegistry = LocateRegistry.getRegistry((!debug ? Naming.HOSTNAME : "localhost"),
