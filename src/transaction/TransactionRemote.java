@@ -78,7 +78,8 @@ public class TransactionRemote implements Transaction {
 		Quote q;
 		boolean forUse = command.equals("QUOTE") ? false: true;
 		try {
-			q = QUOTE_CACHE_STUB.get(userid, stockSymbol, transactionNum, forUse);
+			q = QUOTE_CACHE_STUB.get(userid, stockSymbol, transactionNum,forUse);
+			DB_STUB.quote(userid, q);
 		} catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
@@ -91,7 +92,7 @@ public class TransactionRemote implements Transaction {
 			Log("systemEvent", Long.toString(System.currentTimeMillis()), QuoteCache.SERVER_NAME,
 					Long.toString(transactionNum), command, userid, null, stockSymbol, null, null);
 		try {
-			DB_STUB.checkTriggers(stockSymbol, q.amount, q);
+			DB_STUB.checkTriggers(stockSymbol, q.amount);
 		} catch (Exception e){
 			System.err.println("Error: " + e.getMessage());
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
@@ -135,23 +136,26 @@ public class TransactionRemote implements Transaction {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "ADD",
 				userid, Double.toString(amount), null, null, null);
 
-		// Cannot add negative money. TODO: make this check part of the add
+		// Cannot add negative money. 
 		// method?
 		if (amount < 0.00) {
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"ADD", userid, Double.toString(amount), null, null, "User does not exist");
+					"ADD", userid, Double.toString(amount), null, null, "Invalid amount");
 			return false;
 		}
 
 		// Find/create user and add money to their account
 		try {
-			if (DB_STUB.get("select * from users where name='" + userid + "'").next()) {
-				DB_STUB.set("Insert into users(" + userid + "," + amount + ");");
-			} else {
-				DB_STUB.set("update users set account=account +" + amount + "where id=/'" + userid + "/'");
+			if(!DB_STUB.set("Insert into users values ('" + userid + "'," + amount + ");")){
+				System.out.println("User already found, updating account");
+				if(DB_STUB.set("UPDATE users set account = account + "+amount+"where id='"+userid+"';")){
+					System.out.println("???");
+				}
 			}
-		} catch (Exception e) {
 
+		} catch (Exception e) {
+			
+			System.out.println("error in add, you dun super goofed");
 		}
 
 		// Find/create user and add money to their account
@@ -359,7 +363,6 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public void Dumplog(String userid, String filename, long transactionNum) throws RemoteException {
-		// TODO
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DUMPLOG", userid, null, null, filename, null);
 		ResultSet s=DB_STUB.get("select* from users;");
@@ -389,6 +392,11 @@ public class TransactionRemote implements Transaction {
 
 		try {
 			AUDIT_STUB.writeFile(filename);
+			/*DB_STUB.set("DELETE from users*;");
+			DB_STUB.set("DELETE from quote*;");
+			DB_STUB.set("DELETE from sell*;");
+			DB_STUB.set("DELETE from buy*;");
+			DB_STUB.set("DELETE from users*;");*/
 		} catch (RemoteException e) {
 			System.err.println("Could not execute DUMPLOG");
 		}
