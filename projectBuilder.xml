@@ -18,15 +18,15 @@
 				<attribute name="Main-Class" value="audit.AuditServer" />
 			</manifest>
 		</jar>
-		<jar destfile="jar/quote.jar" basedir="${build.dir}" includes="quote/*.class Interface/*.class naming/*_Stub.class audit/*_Stub.class" excludes="transaction/*_Stub.class">
-			<manifest>
-				<attribute name="Main-Class" value="quote.QuoteCacheServer" />
-			</manifest>
-		</jar>
 		<jar destfile="jar/db.jar" basedir="${build.dir}" includes="database/*.class Interface/Database.class Interface/Naming.class quote/Quote.class transaction/Buy.class transaction/Sell.class naming/*_Stub.class audit/*_Stub.class">
 			<zipgroupfileset dir="lib" includes="postgresql*.jar" />
 			<manifest>
 				<attribute name="Main-Class" value="database.DBServer" />
+			</manifest>
+		</jar>
+		<jar destfile="jar/quote.jar" basedir="${build.dir}" includes="quote/*.class Interface/*.class exception/DatabaseException.class naming/*_Stub.class audit/*_Stub.class database/*_Stub.class" >
+			<manifest>
+				<attribute name="Main-Class" value="quote.QuoteCacheServer" />
 			</manifest>
 		</jar>
 
@@ -40,12 +40,18 @@
 				<attribute name="Main-Class" value="http.HTTPServer" />
 			</manifest>
 		</jar>
-		<jar destfile="jar/workload.jar" basedir="${build.dir}" includes="workload/*.class">
+		<jar destfile="jar/workload.jar" basedir="${build.dir}" includes="workload/*.class Interface/Naming.class naming/*_Stub.class" excludes="workload/WorkloadSlaveRemote.class">
 			<zipgroupfileset dir="lib" includes="*.jar" excludes="postgresql*.jar" />
 			<manifest>
 				<attribute name="Main-Class" value="workload.WorkloadGenerator" />
 			</manifest>
 		</jar>
+		<jar destfile="jar/workloadslave.jar" basedir="${build.dir}" includes="workload/*.class Interface/Naming.class naming/*_Stub.class" excludes="workload/WorkloadGenerator.class">
+					<zipgroupfileset dir="lib" includes="*.jar" excludes="postgresql*.jar" />
+					<manifest>
+						<attribute name="Main-Class" value="workload.WorkloadSlaveRemote" />
+					</manifest>
+				</jar>
 	</target>
 
 </project>

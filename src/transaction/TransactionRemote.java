@@ -227,7 +227,7 @@ public class TransactionRemote implements Transaction {
 	@Override
 	public String CancelBuy(String userid, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-				"CancelBuy", userid, null, null, null, null);
+				"CANCEL_BUY", userid, null, null, null, null);
 
 		return DB_STUB.buycan(userid);
 	}

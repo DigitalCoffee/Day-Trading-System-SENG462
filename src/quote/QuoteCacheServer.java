@@ -57,14 +57,14 @@ public class QuoteCacheServer {
 				System.err.println("A required server was not found.");
 				System.exit(1);
 			}
-			Registry DBRegistry = !debug ? LocateRegistry.getRegistry(auditHost, Naming.RMI_REGISTRY_PORT)
+			Registry DBRegistry = !debug ? LocateRegistry.getRegistry(DBHost, Naming.RMI_REGISTRY_PORT)
 					: namingRegistry;
 			Database DBStub = (Database) DBRegistry.lookup(Database.LOOKUPNAME);
 
 			// Bind to RMI registry
 			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT) : namingRegistry;
-			QuoteCache stub = (QuoteCache) UnicastRemoteObject.exportObject(new QuoteCacheRemote(auditStub, DBStub, debug),
-					QuoteCache.RMI_PORT);
+			QuoteCacheRemote export = new QuoteCacheRemote(auditStub, DBStub, debug);
+			QuoteCache stub = (QuoteCache) UnicastRemoteObject.exportObject(export, QuoteCache.RMI_PORT);
 			registry.rebind(QuoteCache.LOOKUPNAME, stub);
 			System.out.println("Quote Cache Server bound.");
 
@@ -82,6 +82,11 @@ public class QuoteCacheServer {
 		} catch (Exception e) {
 			System.err.println(e);
 			System.exit(1);
+		} catch (Error err){
+		    err.printStackTrace();
+			System.err.println(err);
+			System.exit(1);
+		    throw (err);
 		} finally {
 			System.out.println("Quitting...");
 			try {

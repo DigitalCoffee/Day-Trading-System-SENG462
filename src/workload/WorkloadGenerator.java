@@ -1,17 +1,20 @@
-/**
- * 
- */
 package workload;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import Interface.Naming;
 
 /**
  * @author andrew
@@ -25,14 +28,45 @@ public class WorkloadGenerator {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		if (args.length == 0) {
-			System.err.println("Please provide the path to the workload file.");
+		if (args.length < 2) {
+			System.err.println("Please provide the path to the workload file and a split size.");
 			System.exit(1);
 		}
+		int split_size = Integer.parseInt(args[1]);
 
-		boolean debug = args.length > 1;
+		boolean debug = args.length > 2;
 		if (debug)
 			System.out.println("DEBUG MODE");
+
+		// Acquire the slaves
+		HashMap<String, WorkloadSlave> slaves = new HashMap<String, WorkloadSlave>();
+		if (split_size > 1 && !debug) {
+			try {
+				// Find and connect to servers via Naming Server
+				System.out.println("Contacting Naming Server...");
+				Registry namingRegistry = LocateRegistry.getRegistry(Naming.HOSTNAME, Naming.RMI_REGISTRY_PORT);
+				Naming namingStub = (Naming) namingRegistry.lookup(Naming.LOOKUPNAME);
+
+				for (int i = 0; i < split_size - 1; i++) {
+					System.out.println("Looking up Workload Slave Server in Naming Server");
+					String slaveHost = namingStub.Lookup(WorkloadSlave.LOOKUPNAME);
+					if (slaveHost == null) {
+						System.err.println("A required server was not found.");
+						System.exit(1);
+					}
+					if (slaves.containsKey(slaveHost)) {
+						System.err.println("Not enough slaves in Naming Server... Quitting");
+						System.exit(1);
+					}
+					Registry slaveRegistry = LocateRegistry.getRegistry(slaveHost, Naming.RMI_REGISTRY_PORT);
+					WorkloadSlave slaveStub = (WorkloadSlave) slaveRegistry.lookup(WorkloadSlave.LOOKUPNAME);
+					slaves.put(slaveHost, slaveStub);
+				}
+			} catch (Exception e) {
+				System.err.println("Failed to setup properly... Quitting");
+				System.exit(0);
+			}
+		}
 
 		Pattern p = Pattern.compile(INPUT_REGEX);
 		BufferedReader in = null;
@@ -77,6 +111,44 @@ public class WorkloadGenerator {
 			System.exit(1);
 		}
 
+		// TODO: send fraction of workers to other machines
+		Iterator<Entry<String, Worker>> ws = workers.entrySet().iterator();
+		List<Worker> MasterList = null;
+
+		if (split_size > 1 && !debug) {
+			Iterator<Entry<String, WorkloadSlave>> ss = slaves.entrySet().iterator();
+			for (int i = 0; i < split_size; i++) {
+				List<Worker> sub = new ArrayList<Worker>();
+				for (int j = i * workers.size() / split_size; j < (i + 1) * workers.size() / split_size; j++) {
+					Entry<String, Worker> pair = ws.next();
+					Worker current = (Worker) pair.getValue();
+					sub.add(current);
+				}
+				if (!ss.hasNext())
+					MasterList = sub;
+				else {
+					Entry<String, WorkloadSlave> pair = ss.next();
+					WorkloadSlave current = (WorkloadSlave) pair.getValue();
+					try {
+						current.set(sub);
+						System.out.println(
+								"Sent slave " + pair.getKey() + " " + Integer.toString(sub.size()) + " workers.");
+					} catch (Exception e) {
+						System.err.println("Error sending workers to slaves. Quitting.");
+						System.exit(1);
+					}
+				}
+			}
+
+		} else {
+			MasterList = new ArrayList<Worker>();
+			while (ws.hasNext()) {
+				Entry<String, Worker> pair = ws.next();
+				Worker current = (Worker) pair.getValue();
+				MasterList.add(current);
+			}
+		}
+
 		// Wait for start command
 		System.out.println("User swarm ready! Press ENTER to begin...");
 		System.out.print("Profiliing tools can be set up at this point");
@@ -87,17 +159,40 @@ public class WorkloadGenerator {
 		}
 
 		// Start all the threads
-		Iterator<Entry<String, Worker>> it = workers.entrySet().iterator();
-		while (it.hasNext()) {
-			Entry<String, Worker> pair = it.next();
-			Worker current = (Worker) pair.getValue();
-			current.start();
-			it.remove();
+		Iterator<Entry<String, WorkloadSlave>> st = slaves.entrySet().iterator();
+		while (st.hasNext()) {
+			Entry<String, WorkloadSlave> pair = st.next();
+			WorkloadSlave current = (WorkloadSlave) pair.getValue();
+			try {
+				current.execute();
+			} catch (Exception e) {
+				System.err.println("Failed to start slaves. Quitting.");
+				System.exit(1);
+			}
+		}
+
+		for (int i = 0; i < MasterList.size(); i++) {
+			MasterList.get(i).start();
 		}
 
 		// Wait then send Dumplog
 		while (java.lang.Thread.activeCount() > 1)
 			;
+		// Wait for slaves
+		if (split_size > 1 && !debug) {
+			Iterator<Entry<String, WorkloadSlave>> iw = slaves.entrySet().iterator();
+			while (iw.hasNext()) {
+				Entry<String, WorkloadSlave> pair = iw.next();
+				WorkloadSlave current = (WorkloadSlave) pair.getValue();
+				try {
+					while (!current.done())
+						;
+				} catch (Exception e) {
+					System.err.println("Error checking status of slaves. Quitting.");
+					System.exit(1);
+				}
+			}
+		}
 		dump.start();
 
 	}

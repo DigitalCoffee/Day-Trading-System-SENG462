@@ -1,9 +1,7 @@
-/**
- * 
- */
 package workload;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +22,8 @@ import org.apache.http.util.EntityUtils;
  * @author andrew
  *
  */
-public class Worker extends Thread {
+public class Worker extends Thread implements Serializable {
+	private static final long serialVersionUID = 6682208785103052924L;
 	private Thread t;
 	private String threadName;
 	public List<String> commands;
