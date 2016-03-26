@@ -83,10 +83,15 @@ public class DBRemote implements Database{
 			while(r.next()){
 				if(q<=r.getDouble("price")){
 					ResultSet t=get("Select * from users where id ='"+r.getString("id")+"';");
+					t.next();
 					if(t.getDouble("account")>r.getDouble("amount")){
-						set("UPDATE stock set amount = amount +"+r.getDouble("amount")/q+" where ownerid='"+r.getString("id")+"and name='"+stk+"';");
-						set("UPDATE users set account= account-"+r.getDouble("amount")+"where id="+r.getString("id")+"';");
-						set("DETETE from trigger where id='"+r.getString("id")+"' and sname='"+stk+"' and bors='b'");
+						//System.out.println("You just activated my buy trigger!");
+						boolean a=set("UPDATE stock set amount = amount +"+r.getDouble("amount")/q+" where ownerid='"+r.getString("id")+"and name='"+stk+"';");
+						boolean b=set("UPDATE users set account= account-"+r.getDouble("amount")+"where id="+r.getString("id")+"';");
+						boolean c=set("DETETE from trigger where id='"+r.getString("id")+"' and sname='"+stk+"' and bors='b'");
+						if(!a&&b&&c){
+							System.out.println("a="+a+" b="+b+" c="+c+"in buy triggers");
+						}
 					}else{
 						System.out.println(r.getString("id")+"Has not enough funds  to complete buy trigger");
 					}
@@ -95,18 +100,24 @@ public class DBRemote implements Database{
 			r = get("select* from trigger where sname='"+stk+"'and bors = 's';");
 			while(r.next()){
 				if(q>=r.getDouble("price")){
+				
 					ResultSet t=get("Select * from stock where ownerid ='"+r.getString("id")+"'and stock = '"+stk+"';");
+					t.next();
 					if(t.getDouble("amount")/q>r.getDouble("amount")){
-						set("UPDATE stock set amount = amount -"+r.getDouble("amount")/q+" where ownerid='"+r.getString("id")+"and name='"+stk+"';");
-						set("UPDATE users set account= account +"+r.getDouble("amount")+"where id="+r.getString("id")+"';");
-						set("DETETE from trigger where id='"+r.getString("id")+"' and sname='"+stk+"' and bors='s'");
+						System.out.println("You just activated my sell trigger");
+						boolean a=set("UPDATE stock set amount = amount -"+r.getDouble("amount")/q+" where ownerid='"+r.getString("id")+"and name='"+stk+"';");
+						boolean b=set("UPDATE users set account= account +"+r.getDouble("amount")+"where id="+r.getString("id")+"';");
+						boolean c=set("DETETE from trigger where id='"+r.getString("id")+"' and sname='"+stk+"' and bors='s'");
+						if(!a&&b&&c){
+							System.out.println("a="+a+" b="+b+" c="+c+"in sell triggers");
+						}
 					}else{
 						System.out.println(r.getString("id")+"Has not enough of"+stk+" stock to complete buy trigger");
 					}
 				}
 			}
 		}catch(Exception e){
-			System.out.println("ERROR IN CHECK TRIGGERS in DBREMOTE. ");
+			System.out.println("ERROR IN CHECK TRIGGERS in DBREMOTE. "+e.getMessage() );
 		}
 		
 	}
@@ -138,7 +149,7 @@ public class DBRemote implements Database{
 					System.out.println("Invaid amount entered");
 					return false;
 				}
-				System.out.println("r.next passed");
+				//System.out.println("r.next passed");
 				boolean a=set("UPDATE stock set stock = amount -"+amount/q.getAmount()+" where ownerid='"+userid+"'and name ='"+stock+"';");
 				boolean b=set("Insert into sell values('"+userid+"','"+stock+"',"+amount+");");
 				boolean c=set("Insert into quote values('"+userid+"',"+q.getAmount()+","+q.getCKey()+","+q.getTimestamp()+",'"+stock+"');");
@@ -151,13 +162,13 @@ public class DBRemote implements Database{
 					//sells.put(userid, new Stack<>());
 					sells.get(userid).push(new Sell(amount,stock,q));
 				}else{
-					System.out.println("User added to sells");
+					//System.out.println("User added to sells");
 					sells.put(userid, new Stack<>());
 					sells.get(userid).push(new Sell(amount,stock,q));
 				}
 				return true;
 			}catch(Exception e){
-				System.out.println("Error in SQL processing in SELL command + "+e.getMessage());
+				System.out.println("Error in SQL processing in SELL command + "+e);
 				return false;
 			}
 			
@@ -166,7 +177,7 @@ public class DBRemote implements Database{
 	public String sellcom(String userid){
 		if(sells.containsKey(userid)){
 			if(sells.get(userid).isEmpty() == true){
-				System.out.println("EMPTY SELL STACK in sellcom");
+				//System.out.println("EMPTY SELL STACK in sellcom");
 				return "EMPTY SELL STACK";
 			}
 			Sell s = sells.get(userid).pop();
@@ -179,16 +190,16 @@ public class DBRemote implements Database{
 			}else{
 				boolean a=set("Delete from sell * where ownerid = '"+userid+"', and name = '"+s.getStk()+"'and amount="+s.getAmount()+";");
 				boolean b=set("UPDATE users set account = account +"+s.getAmount()+" where userid ='"+userid+"';");
-				System.out.println("Invalid quote in sellcom");
-				if(!a&&b){
+				//System.out.println("Invalid quote in sellcom");
+				/*if(!a&&b){
 					System.out.println("a="+a+" b="+b);
-				}
+				}*/
 				return "invalid quote";
 			}
-			System.out.println("Sell complete.");
+			//System.out.println("Sell complete.");
 			return "Sell complete.";
 		}else{
-			System.out.println("Empty sell stack in sellcom!");
+			//System.out.println("Empty sell stack in sellcom!");
 			return "Empty Sell stack"; 
 		}
 	}
@@ -203,10 +214,10 @@ public class DBRemote implements Database{
 			if(!set("Update stock set amount = amount + "+s.getAmount()+" where ownerid='"+userid+"' and name = '"+s.getStk()+"';")){
 				set("Insert into stock values('"+userid+"','"+s.getStk()+"',"+s.getAmount()+"');");
 			}
-			System.out.println("Sell canceled");
+			//System.out.println("Sell canceled");
 			return "Sell canceled";
 		}else{
-			System.out.println("empty sell stack in sell can");
+			//System.out.println("empty sell stack in sell can");
 			return "empty stack";
 		}
 	}
@@ -235,11 +246,11 @@ public class DBRemote implements Database{
 			
 			if(buys.containsKey(userid)){
 				buys.get(userid).push(new Buy(amount,stock,q));
-				System.out.println("buy added");
+				//System.out.println("buy added");
 			}else{
 				buys.put(userid, new Stack<>());
 				buys.get(userid).push(new Buy(amount,stock,q));
-				System.out.println("buy added");
+				//System.out.println("buy added");
 			}
 			return true;
 		}else{
@@ -288,7 +299,7 @@ public class DBRemote implements Database{
 				System.out.println("Invalid quote in buy com");
 				return "invalid quote";
 			}
-			System.out.println("BUY Completed");
+			//System.out.println("BUY Completed");
 			return "Buy complete.";
 		}else{
 			return "Empty Buy stack"; 
@@ -315,21 +326,45 @@ public class DBRemote implements Database{
 	}
 	public boolean SBA(String userid, String stockSymbol, double amount){
 		
-		return set("Insert into trigger(id,sname,amount,bors) values('"+userid+"','"+stockSymbol+"',"+amount+",'b'"+");");		
+		boolean a= set("Insert into trigger(id,sname,amount,bors) values('"+userid+"','"+stockSymbol+"',"+amount+",'b'"+");");		
+		if(!a){
+			System.out.println("Insert into trigger(id,sname,amount,bors) values('"+userid+"','"+stockSymbol+"',"+amount+",'b'"+");");
+		}
+		return a;
 	}
 	public boolean CSB(String userid, String stockSymbol){
-		return set("Delete from trigger where sname='"+stockSymbol+"' and id='"+userid+"' and bors='b';");
+		boolean a=set("Delete from trigger where sname='"+stockSymbol+"' and id='"+userid+"' and bors='b';");
+		if(!a){
+			System.out.println("Delete from trigger where sname='"+stockSymbol+"' and id='"+userid+"' and bors='b';");
+		}
+		return a;
 	}
 	public boolean SBT(String userid, String stockSymbol, double amount){
-		return set("Update trigger set price="+amount+" where id='"+userid+"' and sname='"+stockSymbol+"';");
+		boolean a=set("Update trigger set price="+amount+" where id='"+userid+"' and sname='"+stockSymbol+"';");
+		if(!a){
+			System.out.println("Update trigger set price="+amount+" where id='"+userid+"' and sname='"+stockSymbol+"';");
+		}
+		return a;
 	}
 	public boolean CSS(String userid, String stockSymbol){
-		return set("Delete from trigger where sname='"+stockSymbol+"' and id='"+userid+"' and bors='s';");
+		boolean a=set("Delete from trigger where sname='"+stockSymbol+"' and id='"+userid+"' and bors='s';");
+		if(!a){
+			System.out.println("Delete from trigger where sname='"+stockSymbol+"' and id='"+userid+"' and bors='s';");
+		}
+		return a;
 	}
 	public boolean SSA(String userid, String stockSymbol, double amount){
-		return set("Insert into trigger(id,sname,amount,bors) values('"+userid+"','"+stockSymbol+"',"+amount+",'b'"+");");
+		boolean a= set("Insert into trigger(id,sname,amount,bors) values('"+userid+"','"+stockSymbol+"',"+amount+",'b'"+");");
+		if(!a){
+			System.out.println("Insert into trigger(id,sname,amount,bors) values('"+userid+"','"+stockSymbol+"',"+amount+",'b'"+");");
+		}
+		return a;
 	}
 	public boolean SST(String userid, String stockSymbol, double amount){
-		return set("Update trigger set price="+amount+" where id='"+userid+"' and sname='"+stockSymbol+"';");
+		boolean a =set("Update trigger set price="+amount+" where id='"+userid+"' and sname='"+stockSymbol+"';");
+		if(!a){
+			System.out.println("Update trigger set price="+amount+" where id='"+userid+"' and sname='"+stockSymbol+"';");
+		}
+		return a;
 	}	
 }
