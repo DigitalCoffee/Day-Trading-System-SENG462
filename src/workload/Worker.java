@@ -59,10 +59,10 @@ public class Worker extends Thread implements Serializable {
 					HttpEntity entity = response.getEntity();
 					return entity != null ? EntityUtils.toString(entity) : null;
 				} else {
-					HttpEntity entity = response.getEntity();
-					throw new ClientProtocolException(
-							"Unexpected response status: " + status + "\n" + "Respose: " + entity != null
-									? EntityUtils.toString(entity) : "");
+					return "";
+//					throw new ClientProtocolException(
+//							"Unexpected response status: " + status + "\n" + "Respose: " + entity != null
+//									? EntityUtils.toString(entity) : "");
 				}
 			}
 		};

@@ -50,20 +50,9 @@ public class QuoteCacheServer {
 					: namingRegistry;
 			Audit auditStub = (Audit) auditRegistry.lookup(Audit.LOOKUPNAME);
 
-			// TODO: Find and connect to DB Server via Naming Server
-			System.out.println("Looking up Database Server in Naming Server");
-			String DBHost = namingStub.Lookup(Database.LOOKUPNAME);
-			if (DBHost == null) {
-				System.err.println("A required server was not found.");
-				System.exit(1);
-			}
-			Registry DBRegistry = !debug ? LocateRegistry.getRegistry(DBHost, Naming.RMI_REGISTRY_PORT)
-					: namingRegistry;
-			Database DBStub = (Database) DBRegistry.lookup(Database.LOOKUPNAME);
-
 			// Bind to RMI registry
 			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT) : namingRegistry;
-			QuoteCacheRemote export = new QuoteCacheRemote(auditStub, DBStub, debug);
+			QuoteCacheRemote export = new QuoteCacheRemote(auditStub, debug);
 			QuoteCache stub = (QuoteCache) UnicastRemoteObject.exportObject(export, QuoteCache.RMI_PORT);
 			registry.rebind(QuoteCache.LOOKUPNAME, stub);
 			System.out.println("Quote Cache Server bound.");

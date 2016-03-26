@@ -19,15 +19,13 @@ import exception.DatabaseException;
 public class QuoteCacheRemote implements QuoteCache {
 
 	protected static Audit AUDIT_STUB = null;
-	protected static Database DB_STUB = null;
 	protected static ConcurrentHashMap<String, Quote> QUOTES;
 	protected static QuoteFactory QUOTE_FACTORY;
 
 	public boolean DEBUG;
 
-	public QuoteCacheRemote(Audit auditStub, Database DBStub, boolean debug) {
+	public QuoteCacheRemote(Audit auditStub, boolean debug) {
 		AUDIT_STUB = auditStub;
-		DB_STUB = DBStub;
 		QUOTES = new ConcurrentHashMap<String, Quote>();
 		DEBUG = debug;
 		if (!DEBUG) {
@@ -65,19 +63,6 @@ public class QuoteCacheRemote implements QuoteCache {
 			LogQuote(Long.toString(System.currentTimeMillis()), "QSRV", Long.toString(transactionNum),
 					Double.toString(amount), stockSymbol, userid, Long.toString(timestamp), quote.cryptokey);
 			QUOTES.put(stockSymbol, quote);
-			try {
-				if (!DB_STUB.quote(userid, quote))
-					throw new DatabaseException("Could not store quote in the database");
-			} catch (RemoteException e) {
-				try {
-					AUDIT_STUB.logEvent("errorEvent", Long.toString(System.currentTimeMillis()), SERVER_NAME,
-							Long.toString(transactionNum), "", userid, null, stockSymbol, null,
-							"Could not access database");
-				} catch (RemoteException e2) {
-					System.out.println("Failed to log error. Audit Server inaccessible. Quitting...");
-					System.exit(1);
-				}
-			}
 		}
 		return quote;
 	}
