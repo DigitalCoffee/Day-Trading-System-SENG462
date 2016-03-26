@@ -379,7 +379,8 @@ public class TransactionRemote implements Transaction {
 
 		try {
 			AUDIT_STUB.writeFile(filename);
-			/*DB_STUB.set("DELETE from users*;");
+			/*DB_STUB.set("DELETE from trigger*;");
+			DB_STUB.set("DELETE from stock*;");
 			DB_STUB.set("DELETE from quote*;");
 			DB_STUB.set("DELETE from sell*;");
 			DB_STUB.set("DELETE from buy*;");
