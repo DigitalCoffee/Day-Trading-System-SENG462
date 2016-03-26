@@ -147,8 +147,7 @@ public class TransactionRemote implements Transaction {
 		// Find/create user and add money to their account
 		try {
 			if(!DB_STUB.set("Insert into users values ('" + userid + "'," + amount + ");")){
-				System.out.println("User already found, updating account");
-				if(DB_STUB.set("UPDATE users set account = account + "+amount+"where id='"+userid+"';")){
+				if(!DB_STUB.set("UPDATE users set account = account + "+amount+"where id='"+userid+"';")){
 					System.out.println("???");
 				}
 			}
@@ -183,26 +182,6 @@ public class TransactionRemote implements Transaction {
 		} catch (Exception e) {
 			return false;
 		}
-		// // Check if user exists
-		// if (USERS.containsKey(userid)) {
-		// // Confirm that user has enough money
-		// if (USERS.get(userid).account.money.revert() < amount) {
-		// Log("errorEvent", Long.toString(System.currentTimeMillis()),
-		// serverName, Long.toString(transactionNum),
-		// "BUY", userid, Double.toString(amount), stockSymbol, null, "User does
-		// have enough money");
-		// return false;
-		// }
-		// Quote q = FindQuote(userid, stockSymbol, transactionNum, "BUY");
-		// USERS.get(userid).buys.push(new Buy(amount, stockSymbol, q));
-		// return true;
-		// } else {
-		// Log("errorEvent", Long.toString(System.currentTimeMillis()),
-		// serverName, Long.toString(transactionNum),
-		// "BUY", userid, Double.toString(amount), stockSymbol, null, "User does
-		// not exist");
-		// return false;
-		// }
 	}
 
 	/*
@@ -240,6 +219,8 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public boolean Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
+		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+				"SELL", userid, null, stockSymbol, null, null);
 		try {
 			Quote q = FindQuote(userid, stockSymbol, transactionNum, "SELL");
 			return DB_STUB.sell(userid, stockSymbol, amount, q);
@@ -255,6 +236,8 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public String CommitSell(String userid, long transactionNum) throws RemoteException, Exception {
+		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+				"COMMIT_SELL", userid, null, null, null, null);
 		return DB_STUB.sellcom(userid);
 	}
 
@@ -265,6 +248,8 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public String CancelSell(String userid, long transactionNum) throws RemoteException {
+		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+				"CANCEL_SELL", userid, null, null, null, null);
 		return DB_STUB.sellcan(userid);
 	}
 
@@ -277,6 +262,8 @@ public class TransactionRemote implements Transaction {
 	@Override
 	public boolean SetBuyAmount(String userid, String stockSymbol, double amount, long transactionNum)
 			throws RemoteException {
+		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+				"SET_BUY_AMOUNT", userid, null, stockSymbol, null, null);
 		return DB_STUB.SBA(userid, stockSymbol, amount);
 	}
 
