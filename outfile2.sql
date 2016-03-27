@@ -38,7 +38,7 @@ SET default_with_oids = false;
 --
 
 CREATE TABLE buy (
-    name character varying(8),
+    stock character varying(8),
     amount integer,
     ownerid character varying(40)
 );
@@ -51,7 +51,7 @@ ALTER TABLE buy OWNER TO dbayly;
 --
 
 CREATE TABLE quote (
-    amount integer,
+    amount money,
     cryptkey character varying(60),
     "timestamp" bigint,
     name character varying(3),
@@ -67,7 +67,7 @@ ALTER TABLE quote OWNER TO dbayly;
 
 CREATE TABLE sell (
     ownerid character varying(80),
-    symbol character varying(3),
+    stock character varying(3),
     amount double precision
 );
 
@@ -80,7 +80,7 @@ ALTER TABLE sell OWNER TO dbayly;
 
 CREATE TABLE stock (
     ownerid character varying(80),
-    name character varying(3),
+    symbol character varying(3),
     amount integer
 );
 
@@ -92,9 +92,9 @@ ALTER TABLE stock OWNER TO dbayly;
 --
 
 CREATE TABLE trigger (
-    id character varying(4),
+    id character varying(80),
     sname character varying(3),
-    price double precision,
+    price money,
     amount integer,
     account double precision,
     bors character varying(10)

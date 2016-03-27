@@ -76,12 +76,12 @@ public class TransactionRemote implements Transaction {
 	 */
 	protected Quote FindQuote(String userid, String stockSymbol, long transactionNum, String command) {
 		Quote q;
-		boolean forUse = command.equals("QUOTE") ? false: true;
+		boolean forUse = command.equals("QUOTE") ? false : true;
 		try {
-			q = QUOTE_CACHE_STUB.get(userid, stockSymbol, transactionNum,forUse);
+			q = QUOTE_CACHE_STUB.get(userid, stockSymbol, transactionNum, forUse);
 			DB_STUB.quote(userid, q);
 		} catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
+			System.err.println("Error getting quote: " + e.getMessage());
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 					command, userid, null, stockSymbol, null, e.getMessage());
 			return null;
@@ -91,13 +91,16 @@ public class TransactionRemote implements Transaction {
 		if (q.fromCache)
 			Log("systemEvent", Long.toString(System.currentTimeMillis()), QuoteCache.SERVER_NAME,
 					Long.toString(transactionNum), command, userid, null, stockSymbol, null, null);
-		try {
-			DB_STUB.checkTriggers(stockSymbol, q.amount);
-		} catch (Exception e){
-			System.err.println("Error: " + e.getMessage());
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					command, userid, null, stockSymbol, null, e.getMessage());
-			return null;
+		else {
+			// A non-cached quote (new) should be checked against triggers
+			try {
+				DB_STUB.checkTriggers(stockSymbol, q.amount);
+			} catch (Exception e) {
+				System.err.println("Error checking triggers: " + e.getMessage());
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						command, userid, null, stockSymbol, null, e.getMessage());
+				return null;
+			}
 		}
 		return q;
 	}
@@ -136,8 +139,7 @@ public class TransactionRemote implements Transaction {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "ADD",
 				userid, Double.toString(amount), null, null, null);
 
-		// Cannot add negative money. 
-		// method?
+		// Cannot add negative money.
 		if (amount < 0.00) {
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 					"ADD", userid, Double.toString(amount), null, null, "Invalid amount");
@@ -146,22 +148,18 @@ public class TransactionRemote implements Transaction {
 
 		// Find/create user and add money to their account
 		try {
-			if(!DB_STUB.set("Insert into users values ('" + userid + "'," + amount + ");")){
-				if(!DB_STUB.set("UPDATE users set account = account + "+amount+"where id='"+userid+"';")){
-					System.out.println("???");
-				}
+			boolean result = DB_STUB.add(userid, amount);
+			if (result) {
+				Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName,
+						Long.toString(transactionNum), "add", userid, Double.toString(amount), null, null, null);
 			}
-
+			return result;
 		} catch (Exception e) {
-			
-			System.out.println("error in add, you dun super goofed");
+			System.out.println("Database access exception in ADD");
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"ADD", userid, Double.toString(amount), null, null, "Database access exception in ADD");
+			return false;
 		}
-
-		// Find/create user and add money to their account
-
-		Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-				"add", userid, Double.toString(amount), null, null, null);
-		return true;
 	}
 
 	/*
@@ -175,7 +173,6 @@ public class TransactionRemote implements Transaction {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "BUY",
 				userid, Double.toString(amount), stockSymbol, null, null);
 
-		// Check if user exists
 		try {
 			Quote q = FindQuote(userid, stockSymbol, transactionNum, "BUY");
 			return DB_STUB.buy(userid, stockSymbol, amount, q);
@@ -219,8 +216,8 @@ public class TransactionRemote implements Transaction {
 	 */
 	@Override
 	public boolean Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
-		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-				"SELL", userid, null, stockSymbol, null, null);
+		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SELL",
+				userid, null, stockSymbol, null, null);
 		try {
 			Quote q = FindQuote(userid, stockSymbol, transactionNum, "SELL");
 			return DB_STUB.sell(userid, stockSymbol, amount, q);
@@ -352,7 +349,7 @@ public class TransactionRemote implements Transaction {
 	public void Dumplog(String userid, String filename, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DUMPLOG", userid, null, null, filename, null);
-		ResultSet s=DB_STUB.get("select* from users;");
+		ResultSet s = DB_STUB.get("select* from users;");
 		try {
 			PrintWriter w = new PrintWriter(filename, "UTF-8");
 			while (s.next()) {
@@ -379,12 +376,6 @@ public class TransactionRemote implements Transaction {
 
 		try {
 			AUDIT_STUB.writeFile(filename);
-			/*DB_STUB.set("DELETE from trigger*;");
-			DB_STUB.set("DELETE from stock*;");
-			DB_STUB.set("DELETE from quote*;");
-			DB_STUB.set("DELETE from sell*;");
-			DB_STUB.set("DELETE from buy*;");
-			DB_STUB.set("DELETE from users*;");*/
 		} catch (RemoteException e) {
 			System.err.println("Could not execute DUMPLOG");
 		}
