@@ -5,8 +5,8 @@ public class db {
       try {
          Class.forName("org.postgresql.Driver");
          c = DriverManager
-            .getConnection("jdbc:postgresql://localhost:5432/andrew",
-            "andrew", "000");
+            .getConnection("jdbc:postgresql://localhost:5432/mydb",
+            "dbayly", "000");
          c.setAutoCommit(false);
          Statement stmt = c.createStatement();
         

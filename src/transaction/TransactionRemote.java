@@ -152,6 +152,9 @@ public class TransactionRemote implements Transaction {
 			if (result) {
 				Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName,
 						Long.toString(transactionNum), "add", userid, Double.toString(amount), null, null, null);
+			} else {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"ADD", userid, Double.toString(amount), null, null, "Database access in ADD returned false");
 			}
 			return result;
 		} catch (Exception e) {
