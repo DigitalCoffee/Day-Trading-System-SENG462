@@ -52,7 +52,7 @@ ALTER TABLE buy OWNER TO dbayly;
 
 CREATE TABLE quote (
     amount integer,
-    cryptkey character varying(40),
+    cryptkey character varying(60),
     "timestamp" bigint,
     name character varying(3),
     ownerid character varying(40)
