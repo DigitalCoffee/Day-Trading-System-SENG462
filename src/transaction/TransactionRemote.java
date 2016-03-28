@@ -3,7 +3,7 @@
  */
 package transaction;
 
-import java.io.PrintWriter;
+import java.io.*;
 import java.rmi.RemoteException;
 import java.sql.ResultSet;
 import Interface.Audit;
@@ -404,7 +404,16 @@ public class TransactionRemote implements Transaction {
 	public String DisplaySummary(String userid, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DISPLAY_SUMMARY", userid, null, null, null, null);
-		return "TODO";
+		try{
+			ResultSet g=DB_STUB.get("select * from users;");
+			if(g.next()){
+				return (userid+" : "+g.getString("account"));
+			}else{
+				return "user not found";
+			}
+		}catch (Exception e){
+			return "USER NOT IN DB ";
+		}
 	}
 
 }
