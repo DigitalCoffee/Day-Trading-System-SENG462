@@ -144,7 +144,7 @@ public class DBRemote implements Database {
 						}
 					} else {
 						System.out.println(
-								r.getString("id") + "Has not enough of" + stk + " stock to complete buy trigger");
+								r.getString("id") + "Has not enough of" + stk + " stock to complete sell trigger");
 					}
 				}
 			}
