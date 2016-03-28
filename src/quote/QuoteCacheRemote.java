@@ -40,10 +40,10 @@ public class QuoteCacheRemote implements QuoteCache {
 	 * @see Interface.QuoteCache#get(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public Quote get(String userid, String stockSymbol, long transactionNum, boolean forUse) throws DatabaseException {
+	public Quote get(String userid, String stockSymbol, long transactionNum, boolean forUse) {
 		Quote quote;
-		if (QUOTES.containsKey(stockSymbol) && (!forUse && QUOTES.get(stockSymbol).isValid())
-				|| forUse && QUOTES.get(stockSymbol).isUsable()) {
+		if (QUOTES.containsKey(stockSymbol)
+				&& ((!forUse && QUOTES.get(stockSymbol).isValid()) || forUse && QUOTES.get(stockSymbol).isUsable())) {
 			quote = QUOTES.get(stockSymbol);
 			quote.fromCache = true;
 		} else {
@@ -61,7 +61,7 @@ public class QuoteCacheRemote implements QuoteCache {
 			long timestamp = Long.valueOf(fromServer[3]);
 			quote = new Quote(stockSymbol, amount, timestamp, fromServer[4]);
 			LogQuote(Long.toString(System.currentTimeMillis()), "QSRV", Long.toString(transactionNum),
-					Double.toString(amount), stockSymbol, userid, Long.toString(timestamp), quote.cryptokey);
+					Double.toString(amount), stockSymbol, userid, Long.toString(timestamp), quote.cryptokey);;
 			QUOTES.put(stockSymbol, quote);
 		}
 		return quote;

@@ -79,11 +79,20 @@ public class TransactionRemote implements Transaction {
 		boolean forUse = command.equals("QUOTE") ? false : true;
 		try {
 			q = QUOTE_CACHE_STUB.get(userid, stockSymbol, transactionNum, forUse);
-			DB_STUB.quote(userid, q);
 		} catch (Exception e) {
 			System.err.println("Error getting quote: " + e.getMessage());
+			e.printStackTrace();
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					command, userid, null, stockSymbol, null, e.getMessage());
+					command, userid, null, stockSymbol, null, "Error getting quote: " + e.getMessage());
+			return null;
+		}
+		try {
+			DB_STUB.quote(userid, q);
+		} catch (Exception e) {
+			System.err.println("Error storing quote in Database: " + e.getMessage());
+			e.printStackTrace();
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					command, userid, null, stockSymbol, null, "Error storing quote in Database: " + e.getMessage());
 			return null;
 		}
 
@@ -97,8 +106,9 @@ public class TransactionRemote implements Transaction {
 				DB_STUB.checkTriggers(stockSymbol, q.amount);
 			} catch (Exception e) {
 				System.err.println("Error checking triggers: " + e.getMessage());
+				e.printStackTrace();
 				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						command, userid, null, stockSymbol, null, e.getMessage());
+						command, userid, null, stockSymbol, null, "Error checking triggers: " + e.getMessage());
 				return null;
 			}
 		}

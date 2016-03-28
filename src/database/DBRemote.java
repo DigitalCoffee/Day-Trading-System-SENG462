@@ -22,7 +22,7 @@ public class DBRemote implements Database {
 		sells = new ConcurrentHashMap<String, Stack<Sell>>();
 		try {
 			Class.forName("org.postgresql.Driver");
-			c = DriverManager.getConnection("jdbc:postgresql://localhost:5432/mydb", "dbayly", "000");
+			c = DriverManager.getConnection("jdbc:postgresql://localhost:5432/mydb2", "dbayly", "000");
 			c.setAutoCommit(true);
 			System.out.println("Connection successful");
 		} catch (Exception e) {
@@ -92,7 +92,6 @@ public class DBRemote implements Database {
 				// ="+q.getAmount()+",cryptkey='"+q.getCKey()+"',timestamp="+q.getTimestamp()+"
 				// where name='"+q.getStock()+"';");
 			}
-			System.out.println(a);
 			return a;
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
