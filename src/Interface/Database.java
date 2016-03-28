@@ -8,7 +8,7 @@ import quote.Quote;
 public interface Database extends Remote {
 	public static final String LOOKUPNAME	= "Database";
 	public static final int RMI_PORT		= 44457;
-
+	public String DS(String uid)throws RemoteException;
 	public ResultSet get(String cmd)throws RemoteException;
 	public boolean set(String cmd)throws RemoteException;
 	public boolean add(String userid, double amount) throws RemoteException;
