@@ -84,6 +84,7 @@ public class DBRemote implements Database {
 			if (!r.next()) {
 				a = set("Insert into quote values(" + q.getAmount() + ", '" + q.getCKey() + "', " + q.getTimestamp()
 						+ ",'" + q.stock + "','" + userid + "');");
+				//System.out.println("Stock "+q.getStock()+"not found in quote, a="+a);
 			} else {
 				a = set("Update quote set ownerid='" + userid + "', amount =" + q.getAmount() + ", cryptkey='"
 						+ q.getCKey() + "',timestamp=" + q.getTimestamp() + " where name='" + q.getStock() + "';");
@@ -110,7 +111,7 @@ public class DBRemote implements Database {
 						// System.out.println("You just activated my buy
 						// trigger!");
 						boolean a = set("UPDATE stock set amount = amount +" + r.getDouble("amount") / q
-								+ " where ownerid='" + r.getString("id") + "' and name='" + stk + "';");
+								+ " where ownerid='" + r.getString("id") + "' and symbol='" + stk + "';");
 						boolean b = set("UPDATE users set account= account-" + r.getDouble("amount") + " where id='"
 								+ r.getString("id") + "';");
 						boolean c = set("DELETE from trigger where id='" + r.getString("id") + "' and sname='" + stk
@@ -133,7 +134,7 @@ public class DBRemote implements Database {
 					if (t.getDouble("amount") / q > r.getDouble("amount")) {
 						System.out.println("You just activated my sell trigger");
 						boolean a = set("UPDATE stock set amount = amount -" + r.getDouble("amount") / q
-								+ " where ownerid='" + r.getString("id") + "' and name='" + stk + "';");
+								+ " where ownerid='" + r.getString("id") + "' and symbol='" + stk + "';");
 						boolean b = set("UPDATE users set account= account +" + r.getDouble("amount") + "where id="
 								+ r.getString("id") + "';");
 						boolean c = set("DELETE from trigger where id='" + r.getString("id") + "' and sname='" + stk
@@ -156,7 +157,7 @@ public class DBRemote implements Database {
 	public boolean sell(String userid, String stock, double amount, Quote q) {
 		try {
 			ResultSet r = get("select * from users where id='" + userid + "';");
-			ResultSet s = get("select * from stock where ownerid = '" + userid + "' and name = '" + stock + "';");
+			ResultSet s = get("select * from stock where ownerid = '" + userid + "' and symbol = '" + stock + "';");
 			if (r == null) {
 				System.out.println("NULL R in sell");
 				return false;
@@ -170,24 +171,20 @@ public class DBRemote implements Database {
 				return false;
 			}
 			if (!s.next()) {
-				System.out.println("USER DOES NOT OWN ANY OF THE CURRENT STOCK\n"
-						+ "select * from stock where ownerid = '" + userid + "' and name = '" + stock + "';");
+				//System.out.println("USER DOES NOT OWN ANY OF THE CURRENT STOCK\n"
+					//	+ "select * from stock where ownerid = '" + userid + "' and symbol = '" + stock + "';");
 				return false;
 			}
-
-			System.out.println(amount / q.getAmount() + "+" + s.getInt("amount"));
-
 			if (amount < 0 || s.getInt("amount") < amount / q.getAmount()) {
-				System.out.println("Invaid amount entered");
+				System.out.println("Invaid amount entered"+s.getInt("amount")+"< "+amount/q.getAmount());
 				return false;
 			}
 			// System.out.println("r.next passed");
 			boolean a = set("UPDATE stock set amount = amount -" + amount / q.getAmount() + " where ownerid='" + userid
-					+ "' and name ='" + stock + "';");
+					+ "' and symbol ='" + stock + "';");
 			boolean b = set("Insert into sell values('" + userid + "','" + stock + "'," + amount + ");");
-			boolean c = set("Insert into quote values(" + q.getAmount() + ", '" + q.getCKey() + "', " + q.getTimestamp()
-					+ ",'" + stock + "','" + userid + "');");
-			if (!a && b && c) {
+			quote(userid,q);
+			if (!a && b) {
 				System.out.println("a=" + a + " b=" + b + " c=" + c);
 			}
 
@@ -224,17 +221,17 @@ public class DBRemote implements Database {
 					System.out.println("a=" + a + ",b=" + b + "in sell com");
 				}
 			} else {
-				boolean a = set("Delete from sell * where ownerid = '" + userid + "', and stock = '" + s.getStk()
+				boolean a = set("Delete from sell * where ownerid = '" + userid + "', and symbol = '" + s.getStk()
 						+ "'and amount=" + s.getAmount() + ";");
 				boolean b = set(
 						"UPDATE users set account = account +" + s.getAmount() + " where id ='" + userid + "';");
 				// System.out.println("Invalid quote in sellcom");
-				/*
-				 * if(!a&&b){ System.out.println("a="+a+" b="+b); }
-				 */
+				
+				 if(!a&&b){ System.out.println("a="+a+" b="+b+" in sellcom"); }
+				 
 				return "invalid quote";
 			}
-			// System.out.println("Sell complete.");
+			//System.out.println("Sell complete.");
 			return "Sell complete.";
 		} else {
 			// System.out.println("Empty sell stack in sellcom!");
@@ -245,14 +242,14 @@ public class DBRemote implements Database {
 	public String sellcan(String userid) {
 		if (sells.containsKey(userid)) {
 			if (sells.get(userid).isEmpty() == true) {
-				System.out.println("EMPTY SELL STACK in sellcan");
+				//System.out.println("EMPTY SELL STACK in sellcan");
 				return "EMPTY SELL STACK";
 			}
 			Sell s = sells.get(userid).pop();
 			set("Delete from sell where ownerid = '" + userid + "' and stock ='" + s.getStk() + "';");
 			if (!set("Update stock set amount = amount + " + s.getAmount() + " where ownerid='" + userid
-					+ "' and name = '" + s.getStk() + "';")) {
-				set("Insert into stock values('" + userid + "','" + s.getStk() + "'," + s.getAmount() + "');");
+					+ "' and symbol = '" + s.getStk() + "';")) {
+				set("Insert into stock values('" + userid + "','" + s.getStk() + "'," + s.getAmount() + ");");
 			}
 			// System.out.println("Sell canceled");
 			return "Sell canceled";
@@ -273,13 +270,12 @@ public class DBRemote implements Database {
 			}
 			if (r.next()) {
 				if (amount < 0 || r.getDouble("account") < amount) {
-					System.out.println("Invalid amount entered\n r=" + r.getInt("account") + " amount =" + amount);
+					//System.out.println("Invalid amount entered\n r=" + r.getInt("account") + " amount =" + amount);
 					return false;
 				}
 				boolean c = set("UPDATE users set account = account -" + amount + " where id='" + userid + "';");
 				boolean a = set("Insert into buy values('" + stock + "'," + amount + ",'" + userid + "');");
-				boolean b = set("Insert into quote values(" + q.getAmount() + ", '" + q.getCKey() + "', "
-						+ q.getTimestamp() + ",'" + stock + "','" + userid + "');");
+				quote(userid,q);
 
 				// System.out.println("a="+a+" b="+b+" c="+c+" in buy command"
 				// );
@@ -315,13 +311,13 @@ public class DBRemote implements Database {
 			}
 			Buy b = buys.get(userid).pop();
 			if (b.getQuote().isValid()) {
-				ResultSet r = get("select* from stock where ownerid='" + userid + "'and name = '" + b.getStk() + "';");
+				ResultSet r = get("select* from stock where ownerid='" + userid + "'and symbol = '" + b.getStk() + "';");
 				boolean l = true;
 				try {
 					if (!r.next()) {
 
 						l = set("insert into stock values('" + userid + "','" + b.getStk() + "',0);");
-						System.out.println("Null r in buycom");
+						//System.out.println("Null r in buycom");
 
 					}
 				} catch (Exception e) {
@@ -329,11 +325,11 @@ public class DBRemote implements Database {
 				}
 
 				boolean a = set("UPDATE stock set amount = amount +" + (b.getamount() / b.getQuote().getAmount())
-						+ " where ownerid ='" + userid + "' and name='" + b.getStk() + "';");
+						+ " where ownerid ='" + userid + "' and symbol='" + b.getStk() + "';");
 				boolean t = set("DELETE FROM buy WHERE ownerid IN (SELECT ownerid FROM buy WHERE ownerid='" + userid
 						+ "' AND stock='" + b.getStk() + "' LIMIT 1);");
 				if (!a && l && t) {
-					System.out.println("a=" + a + " b=" + " c=" + l + "in buy com");
+					System.out.println("a=" + a + " b="+t + " c=" + l + "in buy com");
 				}
 				// System.out.println("UPDATE stock set amount = amount
 				// +"+(b.getamount()/b.getQuote().getAmount())+" where ownerid
@@ -341,7 +337,7 @@ public class DBRemote implements Database {
 			} else {
 				set("Delete from buy where ownerid = '" + userid + "', and name = '" + b.getStk() + "';");
 				set("UPDATE users set account = account +" + b.getamount() + " where id ='" + userid + "';");
-				System.out.println("Invalid quote in buy com");
+				//System.out.println("Invalid quote in buy com");
 				return "invalid quote";
 			}
 			// System.out.println("BUY Completed");
@@ -360,7 +356,7 @@ public class DBRemote implements Database {
 				return "EMPTY USER BUY STACK";
 			}
 			Buy b = buys.get(userid).pop();
-			boolean a = set("Delete from buy where ownerid = '" + userid + "' and stock ='" + b.getStk() + "';");
+			boolean a = set("Delete from buy where ownerid = '" + userid + "' and symbol ='" + b.getStk() + "';");
 			boolean t = set("UPDATE users set account = account + " + b.getamount() + " where id ='" + userid + "';");
 			if (!a && t) {
 				System.out.println("a=" + a + " b=" + t + "in buycan " + "Delete from buy where ownerid = '" + userid
@@ -394,7 +390,7 @@ public class DBRemote implements Database {
 
 	public boolean SBT(String userid, String stockSymbol, double amount) {
 		boolean a = set(
-				"Update trigger set price=" + amount + " where id='" + userid + "' and sname='" + stockSymbol + "';");
+				"Update trigger set price=" + amount + " where id='" + userid + "' and sname='" + stockSymbol + "' and bors ='b';");
 		if (!a) {
 			System.out.println("Update trigger set price=" + amount + " where id='" + userid + "' and sname='"
 					+ stockSymbol + "';");
@@ -413,17 +409,17 @@ public class DBRemote implements Database {
 
 	public boolean SSA(String userid, String stockSymbol, double amount) {
 		boolean a = set("Insert into trigger(id,sname,amount,bors) values('" + userid + "','" + stockSymbol + "',"
-				+ amount + ",'b'" + ");");
+				+ amount + ",'s');");
 		if (!a) {
 			System.out.println("Insert into trigger(id,sname,amount,bors) values('" + userid + "','" + stockSymbol
-					+ "'," + amount + ",'b'" + ");");
+					+ "'," + amount + ",'s');");
 		}
 		return a;
 	}
 
 	public boolean SST(String userid, String stockSymbol, double amount) {
 		boolean a = set(
-				"Update trigger set price=" + amount + " where id='" + userid + "' and sname='" + stockSymbol + "';");
+				"Update trigger set price=" + amount + " where id='" + userid + "' and sname='" + stockSymbol + "'and bors = 's';");
 		if (!a) {
 			System.out.println("Update trigger set price=" + amount + " where id='" + userid + "' and sname='"
 					+ stockSymbol + "';");
