@@ -19,7 +19,7 @@ import Interface.Audit;
 public class AuditRemote implements Audit {
 
 	private Object LOG_LOCK;
-	
+
 	Document doc;
 	Element rootElement;
 	DOMSource source;
@@ -115,8 +115,6 @@ public class AuditRemote implements Audit {
 				logType.appendChild(msg);
 			}
 		}
-		System.out
-				.println("Wrote " + type + " for TID-" + transactionNum + " from " + server + ", sent @ " + timestamp);
 
 	}
 
@@ -168,8 +166,6 @@ public class AuditRemote implements Audit {
 			quoteServerType.appendChild(key);
 
 		}
-		System.out.println(
-				"Wrote quote server hit for TID-" + transactionNum + " from " + server + ", sent @ " + timestamp);
 	}
 
 	/*

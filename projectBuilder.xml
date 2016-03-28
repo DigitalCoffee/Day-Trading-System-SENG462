@@ -18,7 +18,7 @@
 				<attribute name="Main-Class" value="audit.AuditServer" />
 			</manifest>
 		</jar>
-		<jar destfile="jar/db.jar" basedir="${build.dir}" includes="database/*.class Interface/Database.class Interface/Naming.class quote/Quote.class transaction/Buy.class transaction/Sell.class naming/*_Stub.class audit/*_Stub.class">
+		<jar destfile="jar/db.jar" basedir="${build.dir}" includes="database/*.class Interface/Database.class Interface/Naming.class Interface/Audit.class quote/Quote.class transaction/Buy.class transaction/Sell.class naming/*_Stub.class audit/*_Stub.class">
 			<zipgroupfileset dir="lib" includes="postgresql*.jar" />
 			<manifest>
 				<attribute name="Main-Class" value="database.DBServer" />
