@@ -1,5 +1,6 @@
 package database;
 
+import Interface.Audit;
 import Interface.Database;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -14,10 +15,12 @@ import quote.Quote;
 
 public class DBRemote implements Database {
 	private static Connection c = null;
+	private static Audit AUDIT_STUB = null;
 	private static ConcurrentHashMap<String, Stack<Buy>> buys;
 	private static ConcurrentHashMap<String, Stack<Sell>> sells;
 
-	public DBRemote() {
+	public DBRemote(Audit stub) {
+		AUDIT_STUB = stub;
 		buys = new ConcurrentHashMap<String, Stack<Buy>>();
 		sells = new ConcurrentHashMap<String, Stack<Sell>>();
 		try {
@@ -51,8 +54,6 @@ public class DBRemote implements Database {
 		try {
 			Statement stmt = c.createStatement();
 			int s = stmt.executeUpdate(cmd);
-			// System.out.println("Set Code ="+s);
-			// c.commit();
 		} catch (Exception e) {
 			System.out.println("SET ERROR in " + cmd);
 			System.out.println(e.getMessage());
@@ -84,14 +85,9 @@ public class DBRemote implements Database {
 			if (!r.next()) {
 				a = set("Insert into quote values(" + q.getAmount() + ", '" + q.getCKey() + "', " + q.getTimestamp()
 						+ ",'" + q.stock + "','" + userid + "');");
-				//System.out.println("Stock "+q.getStock()+"not found in quote, a="+a);
 			} else {
 				a = set("Update quote set ownerid='" + userid + "', amount =" + q.getAmount() + ", cryptkey='"
 						+ q.getCKey() + "',timestamp=" + q.getTimestamp() + " where name='" + q.getStock() + "';");
-				// System.out.println("Update quote set ownerid='"+userid+"',
-				// amount
-				// ="+q.getAmount()+",cryptkey='"+q.getCKey()+"',timestamp="+q.getTimestamp()+"
-				// where name='"+q.getStock()+"';");
 			}
 			return a;
 		} catch (Exception e) {
@@ -108,8 +104,6 @@ public class DBRemote implements Database {
 					ResultSet t = get("Select * from users where id ='" + r.getString("id") + "';");
 					t.next();
 					if (t.getDouble("account") > r.getDouble("amount")) {
-						// System.out.println("You just activated my buy
-						// trigger!");
 						boolean a = set("UPDATE stock set amount = amount +" + r.getDouble("amount") / q
 								+ " where ownerid='" + r.getString("id") + "' and symbol='" + stk + "';");
 						boolean b = set("UPDATE users set account= account-" + r.getDouble("amount") + " where id='"
@@ -171,12 +165,9 @@ public class DBRemote implements Database {
 				return false;
 			}
 			if (!s.next()) {
-				//System.out.println("USER DOES NOT OWN ANY OF THE CURRENT STOCK\n"
-					//	+ "select * from stock where ownerid = '" + userid + "' and symbol = '" + stock + "';");
 				return false;
 			}
 			if (amount < 0 || s.getInt("amount") < amount / q.getAmount()) {
-				//System.out.println("Invaid amount entered"+s.getInt("amount")+"< "+amount/q.getAmount());
 				return false;
 			}
 			// System.out.println("r.next passed");
@@ -189,11 +180,8 @@ public class DBRemote implements Database {
 			}
 
 			if (sells.containsKey(userid)) {
-
-				// sells.put(userid, new Stack<>());
 				sells.get(userid).push(new Sell(amount, stock, q));
 			} else {
-				// System.out.println("User added to sells");
 				sells.put(userid, new Stack<>());
 				sells.get(userid).push(new Sell(amount, stock, q));
 			}
@@ -208,7 +196,6 @@ public class DBRemote implements Database {
 	public String sellcom(String userid) {
 		if (sells.containsKey(userid)) {
 			if (sells.get(userid).isEmpty() == true) {
-				// System.out.println("EMPTY SELL STACK in sellcom");
 				return "EMPTY SELL STACK";
 			}
 			Sell s = sells.get(userid).pop();
@@ -225,16 +212,13 @@ public class DBRemote implements Database {
 						+ "'and amount=" + s.getAmount() + ";");
 				boolean b = set(
 						"UPDATE users set account = account +" + s.getAmount() + " where id ='" + userid + "';");
-				// System.out.println("Invalid quote in sellcom");
 				
 				 if(!a&&b){ System.out.println("a="+a+" b="+b+" in sellcom"); }
 				 
 				return "invalid quote";
 			}
-			//System.out.println("Sell complete.");
 			return "Sell complete.";
 		} else {
-			// System.out.println("Empty sell stack in sellcom!");
 			return "Empty Sell stack";
 		}
 	}
@@ -257,7 +241,6 @@ public class DBRemote implements Database {
 	public String sellcan(String userid) {
 		if (sells.containsKey(userid)) {
 			if (sells.get(userid).isEmpty() == true) {
-				//System.out.println("EMPTY SELL STACK in sellcan");
 				return "EMPTY SELL STACK";
 			}
 			Sell s = sells.get(userid).pop();
@@ -266,10 +249,8 @@ public class DBRemote implements Database {
 					+ "' and symbol = '" + s.getStk() + "';")) {
 				set("Insert into stock values('" + userid + "','" + s.getStk() + "'," + s.getAmount() + ");");
 			}
-			// System.out.println("Sell canceled");
 			return "Sell canceled";
 		} else {
-			// System.out.println("empty sell stack in sell can");
 			return "empty stack";
 		}
 	}
@@ -277,32 +258,23 @@ public class DBRemote implements Database {
 	public boolean buy(String userid, String stock, double amount, Quote q) {
 		try {
 			ResultSet r = get("select * from users where id='" + userid + "';");
-			// System.out.println(r.next());
-			// return false;
 			if (r == null) {
 				System.out.println("Buy r check failed");
 				return false;
 			}
 			if (r.next()) {
 				if (amount < 0 || r.getDouble("account") < amount) {
-					//System.out.println("Invalid amount entered\n r=" + r.getInt("account") + " amount =" + amount);
 					return false;
 				}
 				boolean c = set("UPDATE users set account = account -" + amount + " where id='" + userid + "';");
 				boolean a = set("Insert into buy values('" + stock + "'," + amount + ",'" + userid + "');");
 				quote(userid,q);
 
-				// System.out.println("a="+a+" b="+b+" c="+c+" in buy command"
-				// );
-				// return false;
-
 				if (buys.containsKey(userid)) {
 					buys.get(userid).push(new Buy(amount, stock, q));
-					// System.out.println("buy added");
 				} else {
 					buys.put(userid, new Stack<>());
 					buys.get(userid).push(new Buy(amount, stock, q));
-					// System.out.println("buy added");
 				}
 				return true;
 			} else {
@@ -332,7 +304,6 @@ public class DBRemote implements Database {
 					if (!r.next()) {
 
 						l = set("insert into stock values('" + userid + "','" + b.getStk() + "',0);");
-						//System.out.println("Null r in buycom");
 
 					}
 				} catch (Exception e) {
@@ -346,16 +317,11 @@ public class DBRemote implements Database {
 				if (!a && l && t) {
 					System.out.println("a=" + a + " b="+t + " c=" + l + "in buy com");
 				}
-				// System.out.println("UPDATE stock set amount = amount
-				// +"+(b.getamount()/b.getQuote().getAmount())+" where ownerid
-				// ='"+userid+"';");
 			} else {
 				set("Delete from buy where ownerid = '" + userid + "', and name = '" + b.getStk() + "';");
 				set("UPDATE users set account = account +" + b.getamount() + " where id ='" + userid + "';");
-				//System.out.println("Invalid quote in buy com");
 				return "invalid quote";
 			}
-			// System.out.println("BUY Completed");
 			return "Buy complete.";
 		} else {
 			return "Empty Buy stack";
