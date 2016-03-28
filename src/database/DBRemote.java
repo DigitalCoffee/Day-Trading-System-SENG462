@@ -114,7 +114,7 @@ public class DBRemote implements Database {
 							System.out.println("a=" + a + " b=" + b + " c=" + c + "in buy triggers");
 						}
 					} else {
-						System.out.println(r.getString("id") + "Has not enough funds  to complete buy trigger");
+						System.out.println(r.getString("id") + " Has not enough funds  to complete buy trigger");
 					}
 				}
 			}
@@ -123,13 +123,13 @@ public class DBRemote implements Database {
 				if (q >= r.getDouble("price")) {
 
 					ResultSet t = get(
-							"Select * from stock where ownerid ='" + r.getString("id") + "'and stock = '" + stk + "';");
+							"Select * from stock where ownerid ='" + r.getString("id") + "'and symbol = '" + stk + "';");
 					t.next();
 					if (t.getDouble("amount") / q > r.getDouble("amount")) {
 						System.out.println("You just activated my sell trigger");
 						boolean a = set("UPDATE stock set amount = amount -" + r.getDouble("amount") / q
 								+ " where ownerid='" + r.getString("id") + "' and symbol='" + stk + "';");
-						boolean b = set("UPDATE users set account= account +" + r.getDouble("amount") + "where id="
+						boolean b = set("UPDATE users set account= account +" + r.getDouble("amount") + " where id='"
 								+ r.getString("id") + "';");
 						boolean c = set("DELETE from trigger where id='" + r.getString("id") + "' and sname='" + stk
 								+ "' and bors='s'");
@@ -138,7 +138,7 @@ public class DBRemote implements Database {
 						}
 					} else {
 						System.out.println(
-								r.getString("id") + "Has not enough of" + stk + " stock to complete buy trigger");
+								r.getString("id") + "Has not enough of" + stk + " stock to complete sell trigger");
 					}
 				}
 			}
@@ -208,7 +208,7 @@ public class DBRemote implements Database {
 					System.out.println("a=" + a + ",b=" + b + "in sell com");
 				}
 			} else {
-				boolean a = set("Delete from sell * where ownerid = '" + userid + "', and symbol = '" + s.getStk()
+				boolean a = set("Delete from sell * where ownerid = '" + userid + "', and stock = '" + s.getStk()
 						+ "'and amount=" + s.getAmount() + ";");
 				boolean b = set(
 						"UPDATE users set account = account +" + s.getAmount() + " where id ='" + userid + "';");
