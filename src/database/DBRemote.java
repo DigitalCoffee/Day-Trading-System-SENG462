@@ -176,7 +176,7 @@ public class DBRemote implements Database {
 				return false;
 			}
 			if (amount < 0 || s.getInt("amount") < amount / q.getAmount()) {
-				System.out.println("Invaid amount entered"+s.getInt("amount")+"< "+amount/q.getAmount());
+				//System.out.println("Invaid amount entered"+s.getInt("amount")+"< "+amount/q.getAmount());
 				return false;
 			}
 			// System.out.println("r.next passed");
@@ -238,7 +238,22 @@ public class DBRemote implements Database {
 			return "Empty Sell stack";
 		}
 	}
-
+	public String DS(String uid){
+		try{
+		ResultSet r=get("select * from users where id = '"+uid+"';");
+		r.next();
+		String v= r.getString("Id");
+				
+		ResultSet s=get("select * from stock where ownerid='"+uid+"';");
+		while(s.next()){
+			v=v+"\n"+s.getString("symbol")+":"+s.getInt("amount");
+		}
+		return v;
+		
+		}catch(Exception e){
+			return "SQL error in Display summary";
+		}
+	}
 	public String sellcan(String userid) {
 		if (sells.containsKey(userid)) {
 			if (sells.get(userid).isEmpty() == true) {
@@ -356,7 +371,7 @@ public class DBRemote implements Database {
 				return "EMPTY USER BUY STACK";
 			}
 			Buy b = buys.get(userid).pop();
-			boolean a = set("Delete from buy where ownerid = '" + userid + "' and symbol ='" + b.getStk() + "';");
+			boolean a = set("Delete from buy where ownerid = '" + userid + "' and stock ='" + b.getStk() + "';");
 			boolean t = set("UPDATE users set account = account + " + b.getamount() + " where id ='" + userid + "';");
 			if (!a && t) {
 				System.out.println("a=" + a + " b=" + t + "in buycan " + "Delete from buy where ownerid = '" + userid
