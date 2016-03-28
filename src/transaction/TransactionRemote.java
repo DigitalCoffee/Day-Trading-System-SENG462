@@ -405,12 +405,8 @@ public class TransactionRemote implements Transaction {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DISPLAY_SUMMARY", userid, null, null, null, null);
 		try{
-			ResultSet g=DB_STUB.get("select * from users;");
-			if(g.next()){
-				return (userid+" : "+g.getString("account"));
-			}else{
-				return "user not found";
-			}
+			return DB_STUB.DS(userid);
+			
 		}catch (Exception e){
 			return "USER NOT IN DB ";
 		}
