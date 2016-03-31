@@ -27,9 +27,10 @@ public class Worker extends Thread implements Serializable {
 	private Thread t;
 	private String threadName;
 	public List<String> commands;
-	public final static String HTTP_HOST = "b150.seng.uvic.ca";
+	public final static String HTTP_HOST = "b134.seng.uvic.ca";
 	public final static int HTTP_PORT = 44450;
 	private boolean DEBUG = false;
+	private long beginTime;
 
 	/**
 	 * @param name
@@ -53,6 +54,9 @@ public class Worker extends Thread implements Serializable {
 		HttpPost httppost = new HttpPost(httpServer);
 		ResponseHandler<String> responseHandler = new ResponseHandler<String>() {
 			public String handleResponse(final HttpResponse response) throws ClientProtocolException, IOException {
+				long end = System.currentTimeMillis();
+				long diff = end -beginTime;
+				System.out.println( (diff > 10000 ? "COMMAND TOOK TOO LONG!!!!!! ":"") + "Response time for " + command + ": " + Double.toString(diff) + " msecs");
 				int status = response.getStatusLine().getStatusCode();
 
 				if (status >= 200 && status < 300) {
@@ -60,14 +64,16 @@ public class Worker extends Thread implements Serializable {
 					return entity != null ? EntityUtils.toString(entity) : null;
 				} else {
 					return "";
-//					throw new ClientProtocolException(
-//							"Unexpected response status: " + status + "\n" + "Respose: " + entity != null
-//									? EntityUtils.toString(entity) : "");
+					// throw new ClientProtocolException(
+					// "Unexpected response status: " + status + "\n" +
+					// "Respose: " + entity != null
+					// ? EntityUtils.toString(entity) : "");
 				}
 			}
 		};
 		StringEntity entity = new StringEntity(command, ContentType.create("text/plain", "UTF-8"));
 		httppost.setEntity(entity);
+		beginTime = System.currentTimeMillis();
 		return httpclient.execute(httppost, responseHandler);
 	}
 

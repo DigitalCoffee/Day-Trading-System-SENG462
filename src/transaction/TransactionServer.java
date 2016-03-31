@@ -26,7 +26,7 @@ public class TransactionServer {
 		Naming namingStub = null;
 
 		// Pass in an argument to enter debug mode
-		boolean debug = args.length > 0;
+		boolean debug = args.length > 1;
 		if (debug)
 			System.out.println("DEBUG MODE");
 
@@ -75,7 +75,7 @@ public class TransactionServer {
 			// Bind to RMI registry
 			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT) : namingRegistry;
 			Transaction stub = (Transaction) UnicastRemoteObject
-					.exportObject(new TransactionRemote(auditStub, dbStub, cacheStub), Transaction.RMI_PORT);
+					.exportObject(new TransactionRemote(auditStub, dbStub, cacheStub, args[0]), Transaction.RMI_PORT);
 			registry.rebind(Transaction.LOOKUPNAME, stub);
 			System.out.println("Transaction Server bound.");
 

@@ -56,11 +56,15 @@ public class HTTPServer {
 			server.setExecutor(null); // creates a default executor
 			server.start();
 			System.out.println("HTTP server running");
+			System.out.println("Press ENTER to quit.");
+			System.in.read();
 		} catch (NotBoundException e) {
 			System.err.println("The Transaction Server is not bound to a registry. Quitting...");
 			System.exit(1);
 		} catch (Exception e) {
 			System.err.println(e);
+			System.exit(1);
+		} finally {
 			System.exit(1);
 		}
 	}

@@ -12,13 +12,13 @@ import Interface.Naming;
  * @author andrew
  *
  */
-public class WorkloadSlaveRemote implements WorkloadSlave {
+public class WorkloadRunnerRemote implements WorkloadRunner {
 
-	static class WorkloadRunner extends Thread {
+	static class WorkloadExecutor extends Thread {
 		private Thread t;
 		private static List<Worker> WORKERS;
 
-		public WorkloadRunner(List<Worker> workers) {
+		public WorkloadExecutor(List<Worker> workers) {
 			WORKERS = workers;
 		}
 
@@ -36,9 +36,9 @@ public class WorkloadSlaveRemote implements WorkloadSlave {
 		}
 	}
 
-	public static WorkloadRunner RUNNER;
+	public static WorkloadExecutor RUNNER;
 
-	public WorkloadSlaveRemote() {
+	public WorkloadRunnerRemote() {
 	}
 
 	/*
@@ -48,7 +48,7 @@ public class WorkloadSlaveRemote implements WorkloadSlave {
 	 */
 	@Override
 	public void set(List<Worker> workers) {
-		RUNNER = new WorkloadRunner(workers);
+		RUNNER = new WorkloadExecutor(workers);
 		System.out.println("Received " + Integer.toString(workers.size()) + " workers");
 
 	}
@@ -85,17 +85,17 @@ public class WorkloadSlaveRemote implements WorkloadSlave {
 		try {
 			// Bind to RMI registry
 			System.out.println("Workload Slave starting...");
-			WorkloadSlave stub = (WorkloadSlave) UnicastRemoteObject.exportObject(new WorkloadSlaveRemote(),
-					WorkloadSlave.RMI_PORT);
+			WorkloadRunner stub = (WorkloadRunner) UnicastRemoteObject.exportObject(new WorkloadRunnerRemote(),
+					WorkloadRunner.RMI_PORT);
 			Registry registry = LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT);
-			registry.rebind(WorkloadSlave.LOOKUPNAME, stub);
+			registry.rebind(WorkloadRunner.LOOKUPNAME, stub);
 			System.out.println("Workload Slave bound.");
 
 			// Add hostname to Naming Server
 			System.out.println("Contacting Naming Server...");
 			Registry namingRegistry = LocateRegistry.getRegistry(Naming.HOSTNAME, Naming.RMI_REGISTRY_PORT);
 			namingStub = (Naming) namingRegistry.lookup(Naming.LOOKUPNAME);
-			namingStub.AddName(InetAddress.getLocalHost().getHostName(), WorkloadSlave.LOOKUPNAME);
+			namingStub.AddName(InetAddress.getLocalHost().getHostName(), WorkloadRunner.LOOKUPNAME);
 			System.out.println("Workload Slave ready.");
 			System.out.println("Press ENTER to quit.");
 			System.in.read();
@@ -106,7 +106,7 @@ public class WorkloadSlaveRemote implements WorkloadSlave {
 			try {
 				System.out.println("Quitting...");
 				if (namingStub != null)
-					namingStub.RemoveName(InetAddress.getLocalHost().getHostName(), WorkloadSlave.LOOKUPNAME);
+					namingStub.RemoveName(InetAddress.getLocalHost().getHostName(), WorkloadRunner.LOOKUPNAME);
 			} catch (Exception e) {
 				System.err.println(e);
 				System.err.println("Failed to remove hostname from Naming Server.");

@@ -40,16 +40,16 @@
 				<attribute name="Main-Class" value="http.HTTPServer" />
 			</manifest>
 		</jar>
-		<jar destfile="jar/workload.jar" basedir="${build.dir}" includes="workload/*.class Interface/Naming.class naming/*_Stub.class" excludes="workload/WorkloadSlaveRemote.class">
+		<jar destfile="jar/workload.jar" basedir="${build.dir}" includes="workload/*.class Interface/Naming.class naming/*_Stub.class" excludes="workload/WorkloadRunnerRemote.class">
 			<zipgroupfileset dir="lib" includes="*.jar" excludes="postgresql*.jar" />
 			<manifest>
 				<attribute name="Main-Class" value="workload.WorkloadGenerator" />
 			</manifest>
 		</jar>
-		<jar destfile="jar/workloadslave.jar" basedir="${build.dir}" includes="workload/*.class Interface/Naming.class naming/*_Stub.class" excludes="workload/WorkloadGenerator.class">
+		<jar destfile="jar/workloadrunner.jar" basedir="${build.dir}" includes="workload/*.class Interface/Naming.class naming/*_Stub.class" excludes="workload/WorkloadGenerator.class">
 					<zipgroupfileset dir="lib" includes="*.jar" excludes="postgresql*.jar" />
 					<manifest>
-						<attribute name="Main-Class" value="workload.WorkloadSlaveRemote" />
+						<attribute name="Main-Class" value="workload.WorkloadRunnerRemote" />
 					</manifest>
 				</jar>
 	</target>

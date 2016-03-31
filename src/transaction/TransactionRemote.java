@@ -3,9 +3,10 @@
  */
 package transaction;
 
-import java.io.*;
 import java.rmi.RemoteException;
-import java.sql.ResultSet;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+
 import Interface.Audit;
 import Interface.Database;
 import Interface.QuoteCache;
@@ -34,14 +35,20 @@ public class TransactionRemote implements Transaction {
 	// Server name. For logging.
 	public static String serverName = "TS";
 
+	private static ConcurrentHashMap<String, Stack<Buy>> BUYS;
+	private static ConcurrentHashMap<String, Stack<Sell>> SELLS;
+
 	/**
 	 * @param arg0
 	 * @throws RemoteException
 	 */
-	public TransactionRemote(Audit auditStub, Database dbStub, QuoteCache quoteStub) {
+	public TransactionRemote(Audit auditStub, Database dbStub, QuoteCache quoteStub, String suffix) {
 		AUDIT_STUB = auditStub;
 		DB_STUB = dbStub;
 		QUOTE_CACHE_STUB = quoteStub;
+		serverName += suffix;
+		BUYS = new ConcurrentHashMap<String, Stack<Buy>>();
+		SELLS = new ConcurrentHashMap<String, Stack<Sell>>();
 	}
 
 	/**
@@ -87,7 +94,7 @@ public class TransactionRemote implements Transaction {
 			return null;
 		}
 		try {
-			DB_STUB.quote(userid, q);
+			DB_STUB.quote(q);
 		} catch (Exception e) {
 			System.err.println("Error storing quote in Database: " + e.getMessage());
 			e.printStackTrace();
@@ -97,10 +104,10 @@ public class TransactionRemote implements Transaction {
 		}
 
 		// Log if a quote was loaded from cache
-		if (q.fromCache)
+		if (q.fromCache) {
 			Log("systemEvent", Long.toString(System.currentTimeMillis()), QuoteCache.SERVER_NAME,
 					Long.toString(transactionNum), command, userid, null, stockSymbol, null, null);
-		else {
+		} else {
 			// A non-cached quote (new) should be checked against triggers
 			try {
 				DB_STUB.checkTriggers(stockSymbol, q.amount);
@@ -139,6 +146,26 @@ public class TransactionRemote implements Transaction {
 		return result;
 	}
 
+	private boolean addMoney(String userid, double amount, long transactionNum, String command) {
+		// Find/create user and add money to their account
+		try {
+			boolean result = DB_STUB.add(userid, amount);
+			if (result) {
+				Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName,
+						Long.toString(transactionNum), "add", userid, Double.toString(amount), null, null, null);
+			} else {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						command, userid, Double.toString(amount), null, null, "Database access returned false");
+			}
+			return result;
+		} catch (Exception e) {
+			System.out.println("Database access exception");
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					command, userid, Double.toString(amount), null, null, "Database access exception");
+			return false;
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -156,23 +183,7 @@ public class TransactionRemote implements Transaction {
 			return false;
 		}
 
-		// Find/create user and add money to their account
-		try {
-			boolean result = DB_STUB.add(userid, amount);
-			if (result) {
-				Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName,
-						Long.toString(transactionNum), "add", userid, Double.toString(amount), null, null, null);
-			} else {
-				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-						"ADD", userid, Double.toString(amount), null, null, "Database access in ADD returned false");
-			}
-			return result;
-		} catch (Exception e) {
-			System.out.println("Database access exception in ADD");
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					"ADD", userid, Double.toString(amount), null, null, "Database access exception in ADD");
-			return false;
-		}
+		return addMoney(userid, amount, transactionNum, "ADD");
 	}
 
 	/*
@@ -362,18 +373,26 @@ public class TransactionRemote implements Transaction {
 	public void Dumplog(String userid, String filename, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DUMPLOG", userid, null, null, filename, null);
-		ResultSet s = DB_STUB.get("select* from users;");
-		try {
-			PrintWriter w = new PrintWriter(filename, "UTF-8");
-			while (s.next()) {
-				w.println("userid:" + s.getString("id") + ",Account balance:" + s.getString("account"));
-			}
 
-			w.close();
-		} catch (Exception e) {
-			System.out.println("ERROR IN DUMPLOG");
+		try {
+			AUDIT_STUB.getFile(filename, userid);
+		} catch (RemoteException e) {
+			System.err.println("Could not execute DUMPLOG");
 		}
-		return;
+
+		// ResultSet s = DB_STUB.get("select* from users;");
+		// try {
+		// PrintWriter w = new PrintWriter(filename, "UTF-8");
+		// while (s.next()) {
+		// w.println("userid:" + s.getString("id") + ",Account balance:" +
+		// s.getString("account"));
+		// }
+		//
+		// w.close();
+		// } catch (Exception e) {
+		// System.out.println("ERROR IN DUMPLOG");
+		// }
+		// return;
 
 	}
 
@@ -388,7 +407,7 @@ public class TransactionRemote implements Transaction {
 				"DUMPLOG", null, null, null, filename, null);
 
 		try {
-			AUDIT_STUB.writeFile(filename);
+			AUDIT_STUB.getFile(filename);
 		} catch (RemoteException e) {
 			System.err.println("Could not execute DUMPLOG");
 		}
@@ -404,10 +423,10 @@ public class TransactionRemote implements Transaction {
 	public String DisplaySummary(String userid, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DISPLAY_SUMMARY", userid, null, null, null, null);
-		try{
+		try {
 			return DB_STUB.DS(userid);
-			
-		}catch (Exception e){
+
+		} catch (Exception e) {
 			return "USER NOT IN DB ";
 		}
 	}

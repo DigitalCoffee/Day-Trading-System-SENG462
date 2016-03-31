@@ -40,7 +40,7 @@ public class WorkloadGenerator {
 			System.out.println("DEBUG MODE");
 
 		// Acquire the slaves
-		HashMap<String, WorkloadSlave> slaves = new HashMap<String, WorkloadSlave>();
+		HashMap<String, WorkloadRunner> executors = new HashMap<String, WorkloadRunner>();
 		if (split_size > 1 && !debug) {
 			try {
 				// Find and connect to servers via Naming Server
@@ -50,18 +50,18 @@ public class WorkloadGenerator {
 
 				for (int i = 0; i < split_size - 1; i++) {
 					System.out.println("Looking up Workload Slave Server in Naming Server");
-					String slaveHost = namingStub.Lookup(WorkloadSlave.LOOKUPNAME);
-					if (slaveHost == null) {
+					String execHost = namingStub.Lookup(WorkloadRunner.LOOKUPNAME);
+					if (execHost == null) {
 						System.err.println("A required server was not found.");
 						System.exit(1);
 					}
-					if (slaves.containsKey(slaveHost)) {
+					if (executors.containsKey(execHost)) {
 						System.err.println("Not enough slaves in Naming Server... Quitting");
 						System.exit(1);
 					}
-					Registry slaveRegistry = LocateRegistry.getRegistry(slaveHost, Naming.RMI_REGISTRY_PORT);
-					WorkloadSlave slaveStub = (WorkloadSlave) slaveRegistry.lookup(WorkloadSlave.LOOKUPNAME);
-					slaves.put(slaveHost, slaveStub);
+					Registry slaveRegistry = LocateRegistry.getRegistry(execHost, Naming.RMI_REGISTRY_PORT);
+					WorkloadRunner slaveStub = (WorkloadRunner) slaveRegistry.lookup(WorkloadRunner.LOOKUPNAME);
+					executors.put(execHost, slaveStub);
 				}
 			} catch (Exception e) {
 				System.err.println("Failed to setup properly... Quitting");
@@ -117,7 +117,7 @@ public class WorkloadGenerator {
 		List<Worker> MasterList = null;
 
 		if (split_size > 1 && !debug) {
-			Iterator<Entry<String, WorkloadSlave>> ss = slaves.entrySet().iterator();
+			Iterator<Entry<String, WorkloadRunner>> ss = executors.entrySet().iterator();
 			for (int i = 0; i < split_size; i++) {
 				List<Worker> sub = new ArrayList<Worker>();
 				for (int j = i * workers.size() / split_size; j < (i + 1) * workers.size() / split_size; j++) {
@@ -128,8 +128,8 @@ public class WorkloadGenerator {
 				if (!ss.hasNext())
 					MasterList = sub;
 				else {
-					Entry<String, WorkloadSlave> pair = ss.next();
-					WorkloadSlave current = (WorkloadSlave) pair.getValue();
+					Entry<String, WorkloadRunner> pair = ss.next();
+					WorkloadRunner current = (WorkloadRunner) pair.getValue();
 					try {
 						current.set(sub);
 						System.out.println(
@@ -160,10 +160,10 @@ public class WorkloadGenerator {
 		}
 
 		// Start all the threads
-		Iterator<Entry<String, WorkloadSlave>> st = slaves.entrySet().iterator();
+		Iterator<Entry<String, WorkloadRunner>> st = executors.entrySet().iterator();
 		while (st.hasNext()) {
-			Entry<String, WorkloadSlave> pair = st.next();
-			WorkloadSlave current = (WorkloadSlave) pair.getValue();
+			Entry<String, WorkloadRunner> pair = st.next();
+			WorkloadRunner current = (WorkloadRunner) pair.getValue();
 			try {
 				current.execute();
 			} catch (Exception e) {
@@ -181,10 +181,10 @@ public class WorkloadGenerator {
 			;
 		// Wait for slaves
 		if (split_size > 1 && !debug) {
-			Iterator<Entry<String, WorkloadSlave>> iw = slaves.entrySet().iterator();
+			Iterator<Entry<String, WorkloadRunner>> iw = executors.entrySet().iterator();
 			while (iw.hasNext()) {
-				Entry<String, WorkloadSlave> pair = iw.next();
-				WorkloadSlave current = (WorkloadSlave) pair.getValue();
+				Entry<String, WorkloadRunner> pair = iw.next();
+				WorkloadRunner current = (WorkloadRunner) pair.getValue();
 				try {
 					while (!current.done()) TimeUnit.SECONDS.sleep(1);
 				} catch (Exception e) {

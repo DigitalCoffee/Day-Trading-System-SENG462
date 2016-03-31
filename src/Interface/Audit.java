@@ -43,20 +43,15 @@ public interface Audit extends Remote {
 			String stockSymbol, String username, String quoteServerTime, String cryptokey) throws RemoteException;
 
 	/**
-	 * @throws RemoteException
-	 */
-	public void writeFile() throws RemoteException;
-
-	/**
 	 * @param filename
 	 * @throws RemoteException
 	 */
-	public void writeFile(String filename) throws RemoteException;
+	public void getFile(String filename) throws RemoteException;
 
 	/**
 	 * @param filename
 	 * @param username
 	 * @throws RemoteException
 	 */
-	public void writeFile(String filename, String username) throws RemoteException;
+	public void getFile(String filename, String username) throws RemoteException;
 }

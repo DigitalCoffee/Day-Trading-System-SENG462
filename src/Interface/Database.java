@@ -12,7 +12,7 @@ public interface Database extends Remote {
 	public ResultSet get(String cmd)throws RemoteException;
 	public boolean set(String cmd)throws RemoteException;
 	public boolean add(String userid, double amount) throws RemoteException;
-	public boolean quote(String uid, Quote quote) throws RemoteException;
+	public boolean quote(Quote quote) throws RemoteException;
 	public void checkTriggers(String stk,double amount)throws RemoteException;
 	public boolean buy(String uid, String stk,double amount,Quote q)throws RemoteException;
 	public boolean sell(String uid,String stk, double amount,Quote q)throws RemoteException;

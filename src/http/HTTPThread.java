@@ -57,7 +57,6 @@ public class HTTPThread extends Thread {
 					switch (command) {
 					default:
 						System.err.println("Invalid command");
-						// TODO Tell client that their command was invalid.
 						response = "INVALID COMMAND";
 						code = 500;
 						break;

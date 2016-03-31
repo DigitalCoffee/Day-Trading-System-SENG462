@@ -8,9 +8,7 @@ import java.rmi.RemoteException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Interface.Audit;
-import Interface.Database;
 import Interface.QuoteCache;
-import exception.DatabaseException;
 
 /**
  * @author andrew
@@ -61,7 +59,7 @@ public class QuoteCacheRemote implements QuoteCache {
 			long timestamp = Long.valueOf(fromServer[3]);
 			quote = new Quote(stockSymbol, amount, timestamp, fromServer[4]);
 			LogQuote(Long.toString(System.currentTimeMillis()), "QSRV", Long.toString(transactionNum),
-					Double.toString(amount), stockSymbol, userid, Long.toString(timestamp), quote.cryptokey);;
+					Double.toString(amount), stockSymbol, userid, Long.toString(timestamp), quote.cryptokey);
 			QUOTES.put(stockSymbol, quote);
 		}
 		return quote;

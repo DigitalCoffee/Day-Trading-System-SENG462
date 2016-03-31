@@ -29,7 +29,7 @@ public class AuditServer {
 		try {
 			// Bind to RMI registry
 			System.out.println("Audit Server starting...");
-			Audit stub = (Audit) UnicastRemoteObject.exportObject(new AuditRemote(), Audit.RMI_PORT);
+			Audit stub = (Audit) UnicastRemoteObject.exportObject(new AuditRemote(debug), Audit.RMI_PORT);
 			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT)
 					: LocateRegistry.getRegistry(Naming.RMI_REGISTRY_PORT);
 			registry.rebind(Audit.LOOKUPNAME, stub);
