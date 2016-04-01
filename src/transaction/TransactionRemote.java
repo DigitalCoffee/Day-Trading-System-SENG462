@@ -4,6 +4,7 @@
 package transaction;
 
 import java.rmi.RemoteException;
+import java.text.DecimalFormat;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -11,6 +12,7 @@ import Interface.Audit;
 import Interface.Database;
 import Interface.QuoteCache;
 import Interface.Transaction;
+import exception.NegativeMoneyException;
 import quote.Quote;
 
 /**
@@ -35,8 +37,7 @@ public class TransactionRemote implements Transaction {
 	// Server name. For logging.
 	public static String serverName = "TS";
 
-	private static ConcurrentHashMap<String, Stack<Buy>> BUYS;
-	private static ConcurrentHashMap<String, Stack<Sell>> SELLS;
+	private static ConcurrentHashMap<String, User> USERS;
 
 	/**
 	 * @param arg0
@@ -47,8 +48,7 @@ public class TransactionRemote implements Transaction {
 		DB_STUB = dbStub;
 		QUOTE_CACHE_STUB = quoteStub;
 		serverName += suffix;
-		BUYS = new ConcurrentHashMap<String, Stack<Buy>>();
-		SELLS = new ConcurrentHashMap<String, Stack<Sell>>();
+		USERS = new ConcurrentHashMap<String, User>();
 	}
 
 	/**
@@ -93,15 +93,6 @@ public class TransactionRemote implements Transaction {
 					command, userid, null, stockSymbol, null, "Error getting quote: " + e.getMessage());
 			return null;
 		}
-		try {
-			DB_STUB.quote(q);
-		} catch (Exception e) {
-			System.err.println("Error storing quote in Database: " + e.getMessage());
-			e.printStackTrace();
-			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
-					command, userid, null, stockSymbol, null, "Error storing quote in Database: " + e.getMessage());
-			return null;
-		}
 
 		// Log if a quote was loaded from cache
 		if (q.fromCache) {
@@ -110,9 +101,9 @@ public class TransactionRemote implements Transaction {
 		} else {
 			// A non-cached quote (new) should be checked against triggers
 			try {
-				DB_STUB.checkTriggers(stockSymbol, q.amount);
+				DB_STUB.PassQuote(q);
 			} catch (Exception e) {
-				System.err.println("Error checking triggers: " + e.getMessage());
+				System.err.println("Error passing quote: " + e.getMessage());
 				e.printStackTrace();
 				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 						command, userid, null, stockSymbol, null, "Error checking triggers: " + e.getMessage());
@@ -136,23 +127,51 @@ public class TransactionRemote implements Transaction {
 		String result;
 
 		try {
-			result = Double.toString(FindQuote(userid, stockSymbol, transactionNum, "QUOTE").amount);
+			result = stockSymbol + ": $"
+					+ Double.toString(FindQuote(userid, stockSymbol, transactionNum, "QUOTE").amount);
 		} catch (Exception e) {
 			System.err.println("Error: " + e.getMessage());
 			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 					"QUOTE", userid, null, stockSymbol, null, e.getMessage());
-			result = "ERROR";
+			result = "ERROR: Could not get quote";
 		}
 		return result;
 	}
 
 	private boolean addMoney(String userid, double amount, long transactionNum, String command) {
-		// Find/create user and add money to their account
 		try {
-			boolean result = DB_STUB.add(userid, amount);
+			// amount = new Money(amount).revert();
+			boolean result = DB_STUB.addMoney(userid, amount, USERS.containsKey(userid));
 			if (result) {
+				if (!USERS.containsKey(userid))
+					USERS.put(userid, new User(userid));
+				USERS.get(userid).account.money.add(amount);
 				Log("accountTransaction", Long.toString(System.currentTimeMillis()), serverName,
-						Long.toString(transactionNum), "add", userid, Double.toString(amount), null, null, null);
+						Long.toString(transactionNum), amount > 0.00 ? "add" : "remove", userid,
+						new DecimalFormat("#.00").format(Math.abs(amount)), null, null, null);
+			} else {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						command, userid, new DecimalFormat("#.00").format(Math.abs(amount)), null, null,
+						"Database access returned false");
+			}
+			return result;
+		} catch (Exception e) {
+			System.out.println("Database access exception");
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					command, userid, new DecimalFormat("#.00").format(Math.abs(amount)), null, null,
+					"Database access exception");
+			return false;
+		}
+	}
+
+	private boolean addStock(String userid, String stockSymbol, int amount, long transactionNum, String command) {
+		try {
+			boolean result = DB_STUB.addStock(userid, stockSymbol, amount,
+					USERS.get(userid).account.stock.containsKey(stockSymbol));
+			if (result) {
+				if (!USERS.get(userid).account.stock.containsKey(stockSymbol))
+					USERS.get(userid).account.stock.put(stockSymbol, new Stock());
+				USERS.get(userid).account.stock.get(stockSymbol).add(amount);
 			} else {
 				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 						command, userid, Double.toString(amount), null, null, "Database access returned false");
@@ -193,15 +212,32 @@ public class TransactionRemote implements Transaction {
 	 * double, long)
 	 */
 	@Override
-	public boolean Buy(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
+	public String Buy(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "BUY",
 				userid, Double.toString(amount), stockSymbol, null, null);
 
-		try {
+		if (USERS.containsKey(userid)) {
 			Quote q = FindQuote(userid, stockSymbol, transactionNum, "BUY");
-			return DB_STUB.buy(userid, stockSymbol, amount, q);
-		} catch (Exception e) {
-			return false;
+			int shares = (int) (amount / q.amount);
+			double cost = q.amount * shares;
+			if (cost <= 0) {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"BUY", userid, Double.toString(amount), stockSymbol, null, "Specified amount is insufficient");
+				return "ERROR: Specified amount is insufficient";
+			}
+			if (USERS.get(userid).account.money.revert() >= cost) {
+				USERS.get(userid).buys.push(new Buy(amount, stockSymbol, System.currentTimeMillis(), q));
+				return "COST:$" + new DecimalFormat("#.00").format(cost) + ",SHARES:" + Integer.toString(shares)
+						+ ",QUOTE:$" + new DecimalFormat("#.00").format(q.amount);
+			} else {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"BUY", userid, Double.toString(amount), stockSymbol, null, "User does not have enough money");
+				return "ERROR: User does not have enough money";
+			}
+		} else {
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"BUY", userid, Double.toString(amount), stockSymbol, null, "User does not exist");
+			return "ERROR: User does not exist";
 		}
 	}
 
@@ -215,8 +251,56 @@ public class TransactionRemote implements Transaction {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"COMMIT_BUY", userid, null, null, null, null);
 
-		return DB_STUB.buycom(userid);
-
+		String result = "";
+		if (USERS.containsKey(userid)) {
+			Buy b;
+			if (USERS.get(userid).buys.isEmpty()) {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"COMMIT_BUY", userid, null, null, null, "User has no pending buys");
+				result = "ERROR: User has no pending buys";
+			} else {
+				b = USERS.get(userid).buys.pop();
+				if (!b.isValid()) {
+					// TODO: Fit business spec, show new buy if expired
+					USERS.get(userid).buys.empty();
+					Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+							Long.toString(transactionNum), "COMMIT_BUY", userid, null, null, null,
+							"User's pending buys have expired");
+					result = "ERROR: User's pending buys have expired";
+				} else {
+					if (!b.quote.isValid()) {
+						Quote q = FindQuote(userid, b.quote.stock, transactionNum, "COMMIT_BUY");
+						b.quote = q;
+						result = "NEW QUOTE:$" + new DecimalFormat("#.00").format(q.amount) + ",";
+					}
+					int shares = (int) (b.amount.revert() / b.quote.amount);
+					double cost = b.quote.amount * shares;
+					if (cost <= 0) {
+						Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+								Long.toString(transactionNum), "BUY", userid, Double.toString(b.amount.revert()),
+								b.getStk(), null, "Price has changed, BUY amount is insufficient");
+						result += "ERROR: Price has changed, BUY amount is insufficient";
+					} else if (USERS.get(userid).account.money.revert() >= cost) {
+						// TODO: Failure checking
+						addMoney(userid, -1 * cost, transactionNum, "COMMIT_BUY");
+						addStock(userid, b.getStk(), shares, transactionNum, "COMMIT_BUY");
+						result += "COST:$" + new DecimalFormat("#.00").format(cost) + ",SHARES:"
+								+ Integer.toString(shares) + ",QUOTE:$"
+								+ new DecimalFormat("#.00").format(b.quote.amount);
+					} else {
+						Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+								Long.toString(transactionNum), "BUY", userid, Double.toString(b.amount.revert()),
+								b.symbol, null, "User does not have enough money");
+						result += "ERROR: User does not have enough money";
+					}
+				}
+			}
+		} else {
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"COMMIT_BUY", userid, null, null, null, "User does not exist");
+			result = "ERROR: User does not exist";
+		}
+		return result;
 	}
 
 	/*
@@ -229,7 +313,23 @@ public class TransactionRemote implements Transaction {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"CANCEL_BUY", userid, null, null, null, null);
 
-		return DB_STUB.buycan(userid);
+		// TODO: Expired buys?
+		String result;
+		if (USERS.containsKey(userid)) {
+			if (!USERS.get(userid).buys.isEmpty()) {
+				Buy cancelled = USERS.get(userid).buys.pop();
+				result = "Buy Canceled: " + cancelled.symbol + ", Amount: " + Double.toString(cancelled.getAmount());
+			} else {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"CANCEL_BUY", userid, null, null, null, "User has no pending buys");
+				result = "ERROR: User has no pending buys";
+			}
+		} else {
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"CANCEL_BUY", userid, null, null, null, "User does not exist");
+			result = "ERROR: User does not exist";
+		}
+		return result;
 	}
 
 	/*
@@ -239,14 +339,41 @@ public class TransactionRemote implements Transaction {
 	 * double, long)
 	 */
 	@Override
-	public boolean Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
+	public String Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum), "SELL",
 				userid, null, stockSymbol, null, null);
-		try {
-			Quote q = FindQuote(userid, stockSymbol, transactionNum, "SELL");
-			return DB_STUB.sell(userid, stockSymbol, amount, q);
-		} catch (Exception e) {
-			return false;
+
+		if (USERS.containsKey(userid)) {
+			if (USERS.get(userid).account.stock.containsKey(stockSymbol)) {
+				Quote q = FindQuote(userid, stockSymbol, transactionNum, "SELL");
+				int shares = (int) (amount / q.amount);
+				if (shares <= 0) {
+					Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+							Long.toString(transactionNum), "SELL", userid, Double.toString(amount), stockSymbol, null,
+							"Specified amount is insufficient");
+					return "ERROR: Specified amount is insufficient";
+				}
+				if (USERS.get(userid).account.stock.get(stockSymbol).shares >= shares) {
+					USERS.get(userid).sells.push(new Sell(amount, stockSymbol, System.currentTimeMillis(), q));
+					double cost = q.amount * shares;
+					return "SELL:$" + new DecimalFormat("#.00").format(cost) + ",SHARES:" + Integer.toString(shares)
+							+ ",QUOTE:$" + new DecimalFormat("#.00").format(q.amount);
+				} else {
+					Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+							Long.toString(transactionNum), "SELL", userid, Double.toString(amount), stockSymbol, null,
+							"User does not have enough shares of the specified stock");
+					return "ERROR: User does not have enough shares of the specified stock";
+				}
+			} else {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"SELL", userid, Double.toString(amount), stockSymbol, null,
+						"User does not own any of the specified stock");
+				return "ERROR: User does not own any of the specified stock";
+			}
+		} else {
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"SELL", userid, Double.toString(amount), stockSymbol, null, "User does not exist");
+			return "ERROR: User does not exist";
 		}
 	}
 
@@ -259,7 +386,62 @@ public class TransactionRemote implements Transaction {
 	public String CommitSell(String userid, long transactionNum) throws RemoteException, Exception {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"COMMIT_SELL", userid, null, null, null, null);
-		return DB_STUB.sellcom(userid);
+
+		String result = "";
+		if (USERS.containsKey(userid)) {
+			Sell s;
+			if (USERS.get(userid).sells.isEmpty()) {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"COMMIT_SELL", userid, null, null, null, "User has no pending sells");
+				result = "ERROR: User has no pending sells";
+			} else {
+				s = USERS.get(userid).sells.pop();
+				if (USERS.get(userid).account.stock.get(s.getStk()).shares <= 0) {
+					Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+							Long.toString(transactionNum), "COMMIT_SELL", userid, Double.toString(s.getAmount()),
+							s.getStk(), null, "User does not own any of the specified stock");
+					result = "ERROR: User does not own any of the specified stock";
+				} else if (!s.isValid()) {
+					// TODO: Fit business spec, show new buy if expired
+					USERS.get(userid).sells.empty();
+					Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+							Long.toString(transactionNum), "COMMIT_SELL", userid, null, null, null,
+							"User's pending sells have expired");
+					result = "ERROR: User's pending sells have expired";
+				} else {
+					if (!s.getQuote().isValid()) {
+						Quote q = FindQuote(userid, s.quote.stock, transactionNum, "COMMIT_SELL");
+						s.quote = q;
+						result = "NEW QUOTE:$" + new DecimalFormat("#.00").format(q.amount) + ",";
+					}
+					int shares = (int) (s.getAmount() / s.getQuote().amount);
+					if (shares <= 0) {
+						Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+								Long.toString(transactionNum), "COMMIT_SELL", userid, Double.toString(s.getAmount()),
+								s.getStk(), null, "Price has changed, SELL amount is insufficient");
+						result += "ERROR: Price has changed, SELL amount is insufficient";
+					} else if (USERS.get(userid).account.stock.get(s.getStk()).shares >= shares) {
+						double cost = s.getQuote().amount * shares;
+						// TODO: Failure checking
+						addMoney(userid, cost, transactionNum, "COMMIT_SELL");
+						addStock(userid, s.getStk(), -1 * shares, transactionNum, "COMMIT_SELL");
+						result += "SELL:$" + new DecimalFormat("#.00").format(cost) + ",SHARES:"
+								+ Integer.toString(shares) + ",QUOTE:$"
+								+ new DecimalFormat("#.00").format(s.getQuote().amount);
+					} else {
+						Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName,
+								Long.toString(transactionNum), "COMMIT_SELL", userid, Double.toString(s.getAmount()),
+								s.getStk(), null, "User does not have enough shares of the specified stock");
+						result += "ERROR: User does not have enough shares of the specified stock";
+					}
+				}
+			}
+		} else {
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"COMMIT_SELL", userid, null, null, null, "User does not exist");
+			result = "ERROR: User does not exist";
+		}
+		return result;
 	}
 
 	/*
@@ -271,7 +453,23 @@ public class TransactionRemote implements Transaction {
 	public String CancelSell(String userid, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"CANCEL_SELL", userid, null, null, null, null);
-		return DB_STUB.sellcan(userid);
+		// TODO: Expired sells?
+		String result;
+		if (USERS.containsKey(userid)) {
+			if (!USERS.get(userid).sells.isEmpty()) {
+				Sell cancelled = USERS.get(userid).sells.pop();
+				result = "Sell Canceled: " + cancelled.symbol + ", Amount: " + Double.toString(cancelled.getAmount());
+			} else {
+				Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+						"CANCEL_SELL", userid, null, null, null, "User has no pending sells");
+				result = "ERROR: User has no pending sells";
+			}
+		} else {
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"CANCEL_SELL", userid, null, null, null, "User does not exist");
+			result = "ERROR: User does not exist";
+		}
+		return result;
 	}
 
 	/*
@@ -379,21 +577,6 @@ public class TransactionRemote implements Transaction {
 		} catch (RemoteException e) {
 			System.err.println("Could not execute DUMPLOG");
 		}
-
-		// ResultSet s = DB_STUB.get("select* from users;");
-		// try {
-		// PrintWriter w = new PrintWriter(filename, "UTF-8");
-		// while (s.next()) {
-		// w.println("userid:" + s.getString("id") + ",Account balance:" +
-		// s.getString("account"));
-		// }
-		//
-		// w.close();
-		// } catch (Exception e) {
-		// System.out.println("ERROR IN DUMPLOG");
-		// }
-		// return;
-
 	}
 
 	/*
@@ -423,11 +606,13 @@ public class TransactionRemote implements Transaction {
 	public String DisplaySummary(String userid, long transactionNum) throws RemoteException {
 		Log("userCommand", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
 				"DISPLAY_SUMMARY", userid, null, null, null, null);
-		try {
+		if (USERS.contains(userid)) {
 			return DB_STUB.DS(userid);
 
-		} catch (Exception e) {
-			return "USER NOT IN DB ";
+		} else {
+			Log("errorEvent", Long.toString(System.currentTimeMillis()), serverName, Long.toString(transactionNum),
+					"DISPLAY_SUMMARY", userid, null, null, null, "User does not exist");
+			return "ERROR: User does not exist";
 		}
 	}
 

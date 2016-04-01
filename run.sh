@@ -29,7 +29,7 @@ then
         sshpass -p $2 scp jar/naming.jar $1@b153.seng.uvic.ca:/seng/scratch/group5/
     fi
     #Clear DB for run
-    sshpass -p $2 ssh $1@b140.seng.uvic.ca "java -cp /seng/scratch/group5/:/seng/scratch/group5/lib/postgresql-9.4.1208.jar db"
+    sshpass -p $2 ssh $1@b140.seng.uvic.ca "java -cp /seng/scratch/group5/:/seng/scratch/group5/db.jar db"
     sshpass -p $2 ssh $1@b147.seng.uvic.ca "rm /seng/scratch/group5/log_*.txt"
 
     #Run Naming -> Audit -> DB & QuoteCache -> Transactions -> HTTP's -> Workload Runners -> Workload Generator

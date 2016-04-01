@@ -10,17 +10,19 @@ import quote.Quote;
  *
  */
 public class Buy {
+	public static final long BUY_VALID_MILLIS = 60000;
 	String symbol;
 	Quote quote;
 	Money amount;
 	long timestamp;
 
-	public Buy(double amount, String stock, Quote quote) {
+	public Buy(double amount, String stock, long timestamp, Quote quote) {
 		this.amount = new Money(amount);
 		this.symbol = stock;
+		this.timestamp = timestamp;
 		this.quote = quote;
 	}
-	public double getamount(){
+	public double getAmount(){
 		return this.amount.revert();
 	}
 	public Quote getQuote(){
@@ -28,5 +30,8 @@ public class Buy {
 	}
 	public String getStk(){
 		return this.symbol;
+	}
+	public boolean isValid(){
+		return ((System.currentTimeMillis() - this.timestamp) < BUY_VALID_MILLIS);
 	}
 }

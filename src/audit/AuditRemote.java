@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import java.rmi.RemoteException;
+import java.text.DecimalFormat;
 import java.util.concurrent.ConcurrentHashMap;
 
 import Interface.Audit;
@@ -24,7 +25,7 @@ public class AuditRemote implements Audit {
 		DEBUG = debug;
 		USERS = new ConcurrentHashMap<String, FileOutputStream>();
 		try {
-			MASTER_LOG = new FileOutputStream((!DEBUG ? PATH : "") + "log_master.txt", true);
+			MASTER_LOG = new FileOutputStream((!DEBUG ? PATH : "") + "log_master.txt", !DEBUG);
 		} catch (FileNotFoundException e) {
 			System.out.println("Error opening a master log");
 			System.exit(1);
@@ -42,7 +43,8 @@ public class AuditRemote implements Audit {
 	public void logEvent(String type, String timestamp, String server, String transactionNum, String command,
 			String username, String funds, String stockSymbol, String filename, String message) throws RemoteException {
 		String log = type + "," + timestamp + "," + server + "," + transactionNum + "," + command + ","
-				+ (username != null ? username : "") + "," + (funds != null ? funds : "") + ","
+				+ (username != null ? username : "") + ","
+				+ (funds != null ? funds : "") + ","
 				+ (stockSymbol != null ? stockSymbol : "") + "," + (filename != null ? filename : "") + ","
 				+ (message != null ? message : "") + "\n";
 		FileOutputStream userLog = username != null ? getUserFileOutputStream(username) : null;
@@ -65,8 +67,9 @@ public class AuditRemote implements Audit {
 	@Override
 	public void logQuoteServerHit(String timestamp, String server, String transactionNum, String price,
 			String stockSymbol, String username, String quoteServerTime, String cryptokey) throws RemoteException {
-		String log = "quoteServer," + timestamp + "," + server + "," + transactionNum + "," + price + "," + stockSymbol
-				+ "," + username + "," + quoteServerTime + "," + cryptokey + ",\n";
+		String log = "quoteServer," + timestamp + "," + server + "," + transactionNum + ","
+				+ price + "," + stockSymbol + "," + username + "," + quoteServerTime
+				+ "," + cryptokey + ",\n";
 		FileOutputStream userLog = username != null ? getUserFileOutputStream(username) : null;
 
 		if (userLog != null) {
@@ -81,7 +84,7 @@ public class AuditRemote implements Audit {
 		FileOutputStream userLog = null;
 		if (!USERS.containsKey(username)) {
 			try {
-				userLog = new FileOutputStream((!DEBUG ? PATH : "") + "log_" + username + ".txt", true);
+				userLog = new FileOutputStream((!DEBUG ? PATH : "") + "log_" + username + ".txt", !DEBUG);
 				USERS.put(username, userLog);
 			} catch (FileNotFoundException e) {
 				System.out.println("Error opening a user log");

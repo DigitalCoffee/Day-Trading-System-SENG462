@@ -67,7 +67,7 @@ public class HTTPThread extends Thread {
 						result = TransactionStub.Quote_CMD(name, m.group(4), transactionNum);
 						break;
 					case "BUY":
-						success = TransactionStub.Buy(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+						result = TransactionStub.Buy(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 						break;
 					case "COMMIT_BUY":
 						result = TransactionStub.CommitBuy(name, transactionNum);
@@ -76,7 +76,7 @@ public class HTTPThread extends Thread {
 						result = TransactionStub.CancelBuy(name, transactionNum);
 						break;
 					case "SELL":
-						success = TransactionStub.Sell(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
+						result = TransactionStub.Sell(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 						break;
 					case "COMMIT_SELL":
 						result = TransactionStub.CommitSell(name, transactionNum);

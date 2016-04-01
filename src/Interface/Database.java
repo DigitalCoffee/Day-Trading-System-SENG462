@@ -8,18 +8,12 @@ import quote.Quote;
 public interface Database extends Remote {
 	public static final String LOOKUPNAME	= "Database";
 	public static final int RMI_PORT		= 44457;
+
+	public boolean addMoney(String userid, double amount, boolean existing) throws RemoteException;
+	public boolean addStock(String userid, String stockSymbol, int amount, boolean existing) throws RemoteException;
+	public boolean PassQuote(Quote quote) throws RemoteException;
 	public String DS(String uid)throws RemoteException;
-	public ResultSet get(String cmd)throws RemoteException;
-	public boolean set(String cmd)throws RemoteException;
-	public boolean add(String userid, double amount) throws RemoteException;
-	public boolean quote(Quote quote) throws RemoteException;
 	public void checkTriggers(String stk,double amount)throws RemoteException;
-	public boolean buy(String uid, String stk,double amount,Quote q)throws RemoteException;
-	public boolean sell(String uid,String stk, double amount,Quote q)throws RemoteException;
-	public String sellcom(String userid)throws RemoteException;
-	public String sellcan(String userid)throws RemoteException;
-	public String buycom(String userid)throws RemoteException;
-	public String buycan(String user)throws RemoteException;
 	public boolean SBA(String userid, String stockSymbol, double amount)throws RemoteException;
 	public boolean SBT(String userid, String stockSymbol, double amount)throws RemoteException;
 	public boolean CSB(String userid, String stockSymbol)throws RemoteException;

@@ -84,13 +84,14 @@ def main(argv):
                 if m.group(3) not in accounts[m.group(2)]:
                     accounts[m.group(2)][m.group(3)] = 0
                 # Check if user has enough money then either push to stack or record fault
-                price = int( float(m.group(4))/QUOTE_COST ) * QUOTE_COST
+                shares = int( float(m.group(4))/QUOTE_COST )
+                price = shares * QUOTE_COST
                 if price <= 0.0 or accounts[m.group(2)]["money"] < price:
                     faults.append(line)
                 else:
                     if m.group(2) not in buys:
                         buys[m.group(2)] = []
-                    buys[m.group(2)].append([m.group(3), price])
+                    buys[m.group(2)].append([m.group(3), price, shares])
 
             # Commits and Cancels pop from the stack
             # Commits will update the user's account
@@ -103,14 +104,16 @@ def main(argv):
                 else:
                     cur = buys[m.group(2)].pop()
                     if m.group(1) == "COMMIT_BUY":
-                        if accounts[m.group(2)]["money"] < cur[1]:
+                        price = cur[1]
+                        if accounts[m.group(2)]["money"] < price:
                             faults.append(line)
-                        elif accounts[m.group(2)]["money"] >= cur[1]:
-                            accounts[m.group(2)]["money"] = accounts[m.group(2)]["money"] - cur[1]
+                        elif accounts[m.group(2)]["money"] >= price:
+                            accounts[m.group(2)]["money"] = accounts[m.group(2)]["money"] - price
                             if cur[0] not in accounts[m.group(2)]:
-                                accounts[m.group(2)][cur[0]] = int(cur[1] / QUOTE_COST)
+                                accounts[m.group(2)][cur[0]] = cur[2]
                             else:
-                                accounts[m.group(2)][cur[0]] = accounts[m.group(2)][cur[0]] + int(cur[1] / QUOTE_COST)
+                                accounts[m.group(2)][cur[0]] = accounts[m.group(2)][cur[0]] + cur[2]
+                            #print "BUY Balance: " + str(accounts[m.group(2)]["money"]) + ", removed " + str(price) + ", Shares: " + str(accounts[m.group(2)][cur[0]])
 
             # Sells are added to a stack if the user has enough of the stock they wish to sell
             if m.group(1) == "SELL":
@@ -118,13 +121,14 @@ def main(argv):
                 if m.group(3) not in accounts[m.group(2)]:
                     errors.append(line)
                     continue
-                amount = int(float(m.group(4)))
-                if accounts[m.group(2)] < amount:
+                shares = int( float(m.group(4))/QUOTE_COST )
+                price = shares * QUOTE_COST
+                if accounts[m.group(2)] < shares:
                     faults.append(line)
                 else:
                     if m.group(2) not in sells:
                         sells[m.group(2)] = []
-                    sells[m.group(2)].append([m.group(3), amount])
+                    sells[m.group(2)].append([m.group(3), price, shares])
 
             # Commits and Cancels pop from the stack
             # Commits will update the user's account
@@ -137,11 +141,12 @@ def main(argv):
                 else:
                     cur = sells[m.group(2)].pop()
                     if m.group(1) == "COMMIT_SELL":
-                        if accounts[m.group(2)][cur[0]] < cur[1]:
+                        if accounts[m.group(2)][cur[0]] < cur[2]:
                             faults.append(line)
-                        elif accounts[m.group(2)][cur[0]] >= cur[1]:
-                            accounts[m.group(2)][cur[0]] = accounts[m.group(2)][cur[0]] - cur[1]
-                            accounts[m.group(2)]["money"] = accounts[m.group(2)]["money"] + (cur[1] * QUOTE_COST)
+                        elif accounts[m.group(2)][cur[0]] >= cur[2]:
+                            accounts[m.group(2)][cur[0]] = accounts[m.group(2)][cur[0]] - cur[2]
+                            accounts[m.group(2)]["money"] = accounts[m.group(2)]["money"] + cur[1]
+                            #print "SELL Balance: " + str(accounts[m.group(2)]["money"]) + ", removed " + str(cur[1]) + ", Shares: " + str(accounts[m.group(2)][cur[0]])
 
             #if m.group(1) == "SET_BUY_AMOUNT":
 

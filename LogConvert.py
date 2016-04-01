@@ -16,6 +16,7 @@ def tagIT(tag, innerStr):
 
 def main(argv):
 
+    transactions = []
     if not sys.argv[1]:
         print "Please provide the path to the log file."
         sys.exit(0)
@@ -27,6 +28,8 @@ def main(argv):
             if not m.group(1) or m.group(1) not in log_types:
                 print "INVALID LOG: " + line
                 continue
+            if int(m.group(4)) not in transactions:
+                transactions.append(int(m.group(4)))
             log = tagIT("timestamp", m.group(2)) + tagIT("server", m.group(3)) + tagIT("transactionNum", m.group(4))
             if m.group(1) == "userCommand" or m.group(1) == "systemEvent":
                 log = log + tagIT("command", m.group(5))
@@ -56,6 +59,8 @@ def main(argv):
             fo.write(log)
     fo.write("</log>")
     fo.close()
+
+    print "Number of logged transactions: " + str(len(transactions))
 
 if __name__ == "__main__":
    main(sys.argv)

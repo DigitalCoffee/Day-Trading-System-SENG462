@@ -41,7 +41,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean Buy(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
+	public String Buy(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
 
 	// Returns a string containing the stock purchased and the user's current funds
 	// Throws an exception if the user does not have enough money to buy the stock.
@@ -72,7 +72,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
+	public String Sell(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
 
 	// Returns a string containing the stock sold and the user's current funds
 	// Throws an exception if the user does not have enough stock to sell.
