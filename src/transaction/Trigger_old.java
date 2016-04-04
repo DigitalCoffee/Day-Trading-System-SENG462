@@ -10,7 +10,7 @@ import exception.NegativeStockException;
  * @author David
  *
  */
-public class Trigger {
+public class Trigger_old {
 	String id;
 	String stock;
 	double amount;
@@ -18,7 +18,7 @@ public class Trigger {
 	Money account;
 	int stkaccount;
 	boolean bors;//Buy or sell trigger buy == true;
-	public Trigger(String stock,double amount){
+	public Trigger_old(String stock,double amount){
 		this.stock=stock;
 		this.Price=new Money(amount);
 		this.account=new Money(0);

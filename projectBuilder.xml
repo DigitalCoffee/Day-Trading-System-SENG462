@@ -24,18 +24,22 @@
 				<attribute name="Main-Class" value="database.DBServer" />
 			</manifest>
 		</jar>
-		<jar destfile="jar/quote.jar" basedir="${build.dir}" includes="quote/*.class Interface/*.class exception/DatabaseException.class naming/*_Stub.class audit/*_Stub.class database/*_Stub.class" >
+		<jar destfile="jar/quote.jar" basedir="${build.dir}" includes="quote/*.class Interface/*.class exception/DatabaseException.class naming/*_Stub.class audit/*_Stub.class database/*_Stub.class">
 			<manifest>
 				<attribute name="Main-Class" value="quote.QuoteCacheServer" />
 			</manifest>
 		</jar>
-
+		<jar destfile="jar/trigger.jar" basedir="${build.dir}" includes="trigger/*.class quote/Quote.class Interface/*.class naming/*_Stub.class audit/*_Stub.class database/*_Stub.class">
+			<manifest>
+				<attribute name="Main-Class" value="trigger.TriggerServer" />
+			</manifest>
+		</jar>
 		<jar destfile="jar/transaction.jar" basedir="${build.dir}" includes="transaction/*.class Interface/*.class exception/*.class quote/Quote.class **/*_Stub.class" excludes="transaction/*_Stub.class">
 			<manifest>
 				<attribute name="Main-Class" value="transaction.TransactionServer" />
 			</manifest>
 		</jar>
-		<jar destfile="jar/http.jar" basedir="${build.dir}" includes="http/*.class Interface/Naming.class Interface/Transaction.class naming/*_Stub.class transaction/*_Stub.class">
+		<jar destfile="jar/http.jar" basedir="${build.dir}" includes="http/*.class quote/Quote.class Interface/Naming.class Interface/Transaction.class Interface/QuoteCache.class naming/*_Stub.class transaction/*_Stub.class quote/*_Stub.class">
 			<manifest>
 				<attribute name="Main-Class" value="http.HTTPServer" />
 			</manifest>
@@ -47,11 +51,11 @@
 			</manifest>
 		</jar>
 		<jar destfile="jar/workloadrunner.jar" basedir="${build.dir}" includes="workload/*.class Interface/Naming.class naming/*_Stub.class" excludes="workload/WorkloadGenerator.class">
-					<zipgroupfileset dir="lib" includes="*.jar" excludes="postgresql*.jar" />
-					<manifest>
-						<attribute name="Main-Class" value="workload.WorkloadRunnerRemote" />
-					</manifest>
-				</jar>
+			<zipgroupfileset dir="lib" includes="*.jar" excludes="postgresql*.jar" />
+			<manifest>
+				<attribute name="Main-Class" value="workload.WorkloadRunnerRemote" />
+			</manifest>
+		</jar>
 	</target>
 
 </project>

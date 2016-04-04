@@ -59,12 +59,6 @@ def main(argv):
         # User id is guaranteed to be group 2 if command is not Dumplog
         if m.group(1) != "DUMPLOG":
 
-            # Increase number of commands for corresponding user
-            if m.group(2) not in users:
-                users[m.group(2)] = 1
-            else:
-                users[m.group(2)] = users[m.group(2)] + 1
-
             # ADD command adds user into system
             if m.group(1) == "ADD" and m.group(2) not in accounts:
                 accounts[m.group(2)] = {}
@@ -76,6 +70,12 @@ def main(argv):
             # User already exists, add more money to account
             elif m.group(1) == "ADD" and m.group(2) in accounts:
                 accounts[m.group(2)]["money"] = accounts[m.group(2)]["money"] + float(m.group(3))
+
+            # Increase number of commands for corresponding user
+            if m.group(2) not in users:
+                users[m.group(2)] = 1
+            else:
+                users[m.group(2)] = users[m.group(2)] + 1
 
             # Buys are added to a stack if the user has enough money equal to:
             # QUOTE_COST * max integer value of shares that can be bought for requested price

@@ -28,10 +28,9 @@ def main(argv):
             if not m.group(1) or m.group(1) not in log_types:
                 print "INVALID LOG: " + line
                 continue
-            if int(m.group(4)) not in transactions:
-                transactions.append(int(m.group(4)))
+            transactions.append(int(m.group(4)))
             log = tagIT("timestamp", m.group(2)) + tagIT("server", m.group(3)) + tagIT("transactionNum", m.group(4))
-            if m.group(1) == "userCommand" or m.group(1) == "systemEvent":
+            if m.group(1) == "userCommand" or m.group(1) == "systemEvent" or m.group(1) == "errorEvent" or m.group(1) == "debugEvent":
                 log = log + tagIT("command", m.group(5))
                 if m.group(6):
                     log = log + tagIT("username", m.group(6))
@@ -43,8 +42,8 @@ def main(argv):
                     log = log + tagIT("funds", m.group(7))
                 if m.group(1) == "errorEvent" and m.group(10):
                     log = log + tagIT("errorMessage", m.group(10))
-                elif m.group(1) == "errorEvent" and m.group(10):
-                    log = log + tagIT("debugEvent", m.group(10))
+                elif m.group(1) == "debugEvent" and m.group(10):
+                    log = log + tagIT("debugMessage", m.group(10))
             elif m.group(1) == "quoteServer":
                 log = log + tagIT("price", m.group(5))
                 log = log + tagIT("stockSymbol", m.group(6))
@@ -60,7 +59,7 @@ def main(argv):
     fo.write("</log>")
     fo.close()
 
-    print "Number of logged transactions: " + str(len(transactions))
+    print "Number of logged transactions: " + str(len(set(transactions)))
 
 if __name__ == "__main__":
    main(sys.argv)

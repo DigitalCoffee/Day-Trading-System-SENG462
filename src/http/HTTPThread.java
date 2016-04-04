@@ -9,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import com.sun.net.httpserver.HttpExchange;
 
+import Interface.QuoteCache;
 import Interface.Transaction;
 
 /**
@@ -19,11 +20,13 @@ public class HTTPThread extends Thread {
 	private Thread t;
 	private HttpExchange exchange;
 	private Transaction TransactionStub;
+	private QuoteCache QuoteStub;
 	public static final String INPUT_REGEX = "\\[(\\d+)\\]\\s*(ADD|QUOTE|(?:(?:(?:COMMIT|CANCEL)_(?:SET_)?)?(?:BUY|SELL))|SET_(?:BUY|SELL)_(?:AMOUNT|TRIGGER)|DUMPLOG|DISPLAY_SUMMARY),([^,]*)(?:,([^,]*))?(?:,([^,]*))?";
 
-	HTTPThread(HttpExchange ex, Transaction TStub) {
+	HTTPThread(HttpExchange ex, Transaction TStub, QuoteCache QStub) {
 		exchange = ex;
 		TransactionStub = TStub;
+		QuoteStub = QStub;
 	}
 
 	static String convertStreamToString(java.io.InputStream is) {
@@ -67,6 +70,7 @@ public class HTTPThread extends Thread {
 						result = TransactionStub.Quote_CMD(name, m.group(4), transactionNum);
 						break;
 					case "BUY":
+						QuoteStub.preLoad(name, m.group(4), transactionNum, true);
 						result = TransactionStub.Buy(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 						break;
 					case "COMMIT_BUY":
@@ -76,6 +80,7 @@ public class HTTPThread extends Thread {
 						result = TransactionStub.CancelBuy(name, transactionNum);
 						break;
 					case "SELL":
+						QuoteStub.preLoad(name, m.group(4), transactionNum, true);
 						result = TransactionStub.Sell(name, m.group(4), Double.valueOf(m.group(5)), transactionNum);
 						break;
 					case "COMMIT_SELL":
@@ -85,26 +90,26 @@ public class HTTPThread extends Thread {
 						result = TransactionStub.CancelSell(name, transactionNum);
 						break;
 					case "SET_BUY_AMOUNT":
-						success = TransactionStub.SetBuyAmount(name, m.group(4), Double.valueOf(m.group(5)),
+						result = TransactionStub.SetBuyAmount(name, m.group(4), Double.valueOf(m.group(5)),
 								transactionNum);
 						break;
 					case "CANCEL_SET_BUY":
-						success = TransactionStub.CancelSetBuy(name, m.group(4), transactionNum);
+						result = TransactionStub.CancelSetBuy(name, m.group(4), transactionNum);
 						break;
 					case "SET_BUY_TRIGGER":
-						success = TransactionStub.SetBuyTrigger(name, m.group(4), Double.valueOf(m.group(5)),
+						result = TransactionStub.SetBuyTrigger(name, m.group(4), Double.valueOf(m.group(5)),
 								transactionNum);
 						break;
 					case "SET_SELL_AMOUNT":
-						success = TransactionStub.SetSellAmount(name, m.group(4), Double.valueOf(m.group(5)),
+						result = TransactionStub.SetSellAmount(name, m.group(4), Double.valueOf(m.group(5)),
 								transactionNum);
 						break;
 					case "SET_SELL_TRIGGER":
-						success = TransactionStub.SetSellTrigger(name, m.group(4), Double.valueOf(m.group(5)),
+						result = TransactionStub.SetSellTrigger(name, m.group(4), Double.valueOf(m.group(5)),
 								transactionNum);
 						break;
 					case "CANCEL_SET_SELL":
-						success = TransactionStub.CancelSetSell(name, m.group(4), transactionNum);
+						result = TransactionStub.CancelSetSell(name, m.group(4), transactionNum);
 						break;
 					case "DUMPLOG":
 						// TODO: Send file to client/admin
@@ -116,10 +121,10 @@ public class HTTPThread extends Thread {
 						break;
 					case "DISPLAY_SUMMARY":
 						result = TransactionStub.DisplaySummary(name, transactionNum);
-						// TODO: send result to client
 						break;
 					}
-					if (result != null)
+					// if (result != null) System.out.println(result);
+					if (result != null && result.toLowerCase().contains("error"))
 						System.out.println(result);
 					response = (result != null) ? result : Boolean.toString(success);
 					code = 200;
@@ -144,7 +149,6 @@ public class HTTPThread extends Thread {
 			response = "FAILURE: " + e.getMessage();
 			code = 500;
 		}
-		// TODO: Send response to client
 		try {
 			exchange.sendResponseHeaders(code, response.length());
 			OutputStream os = exchange.getResponseBody();

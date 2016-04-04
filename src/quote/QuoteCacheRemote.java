@@ -4,6 +4,7 @@
 package quote;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.rmi.RemoteException;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,6 +22,31 @@ public class QuoteCacheRemote implements QuoteCache {
 	protected static QuoteFactory QUOTE_FACTORY;
 
 	public boolean DEBUG;
+	
+	private class runner extends Thread {
+		Thread t;
+		String userid;
+		String stock;
+		long transactionNum;
+		boolean forUse;
+		runner(String userid, String stock, long transactionNum, boolean forUse){
+			this.userid = userid;
+			this.stock = stock;
+			this.transactionNum = transactionNum;
+		}
+		public void run() {
+			if (!QUOTES.containsKey(stock) || (forUse ? QUOTES.get(stock).isUsable() : QUOTES.get(stock).isValid())) {
+				get(userid, stock, transactionNum, forUse);
+			}
+		}
+
+		public void start() {
+			if (t == null) {
+				t = new Thread(this);
+				t.start();
+			}
+		}
+	}
 
 	public QuoteCacheRemote(Audit auditStub, boolean debug) {
 		AUDIT_STUB = auditStub;
@@ -28,7 +54,6 @@ public class QuoteCacheRemote implements QuoteCache {
 		DEBUG = debug;
 		if (!DEBUG) {
 			QUOTE_FACTORY = new QuoteFactory();
-			QUOTE_FACTORY.start();
 		}
 	}
 
@@ -84,6 +109,10 @@ public class QuoteCacheRemote implements QuoteCache {
 			System.err.println("Audit server RMI connection exception: " + e.getMessage());
 			e.printStackTrace();
 		}
+	}
+	
+	public void preLoad(String userid, String stockSymbol, long transactionNum, boolean forUse) {
+		new runner(userid, stockSymbol, transactionNum, forUse).start();
 	}
 
 }

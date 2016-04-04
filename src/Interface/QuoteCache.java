@@ -20,6 +20,8 @@ public interface QuoteCache extends Remote {
 	 * @param stockSymbol
 	 * @return
 	 */
-	public Quote get(String userid, String stockSymbol, long transactionNum, boolean forUse) throws RemoteException, DatabaseException;
+	public Quote get(String userid, String stockSymbol, long transactionNum, boolean forUse) throws RemoteException;
+	
+	public void preLoad(String userid, String stockSymbol, long transactionNum, boolean forUse) throws RemoteException;
 
 }

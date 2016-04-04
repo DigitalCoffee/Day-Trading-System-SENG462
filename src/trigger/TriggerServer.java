@@ -1,4 +1,7 @@
-package transaction;
+/**
+ * 
+ */
+package trigger;
 
 import java.net.InetAddress;
 import java.rmi.NotBoundException;
@@ -9,30 +12,27 @@ import java.rmi.server.UnicastRemoteObject;
 import Interface.Audit;
 import Interface.Database;
 import Interface.Naming;
-import Interface.QuoteCache;
-import Interface.Transaction;
 import Interface.Trigger;
 
 /**
  * @author andrew
  *
  */
-public class TransactionServer {
+public class TriggerServer {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-
 		Naming namingStub = null;
 
 		// Pass in an argument to enter debug mode
-		boolean debug = args.length > 1;
+		boolean debug = args.length > 0;
 		if (debug)
 			System.out.println("DEBUG MODE");
 
 		try {
-			System.out.println("Transaction Server starting...");
+			System.out.println("Trigger Server starting...");
 
 			// Find and connect to Naming Server
 			System.out.println("Contacting Naming Server...");
@@ -62,40 +62,17 @@ public class TransactionServer {
 					: namingRegistry;
 			Database dbStub = (Database) dbRegistry.lookup(Database.LOOKUPNAME);
 
-			// Get the Trigger Server Stub loaded
-			System.out.println("Looking up Trigger Server in Naming Server");
-			String triggerHost = namingStub.Lookup(Trigger.LOOKUPNAME);
-			if (triggerHost == null) {
-				System.err.println("Trigger host not found.");
-				System.exit(1);
-			}
-			Registry triggerRegistry = !debug ? LocateRegistry.getRegistry(triggerHost, Naming.RMI_REGISTRY_PORT)
-					: namingRegistry;
-			Trigger triggerStub = (Trigger) triggerRegistry.lookup(Trigger.LOOKUPNAME);
-
-			// Get the Quote Cache Server Stub loaded
-			System.out.println("Looking up Quote Cache Server in Naming Server");
-			String cacheHost = namingStub.Lookup(QuoteCache.LOOKUPNAME);
-			if (cacheHost == null) {
-				System.err.println("Quote Cache host not found.");
-				System.exit(1);
-			}
-			Registry cacheRegistry = !debug ? LocateRegistry.getRegistry(cacheHost, Naming.RMI_REGISTRY_PORT)
-					: namingRegistry;
-			QuoteCache cacheStub = (QuoteCache) cacheRegistry.lookup(QuoteCache.LOOKUPNAME);
-
 			// Bind to RMI registry
 			Registry registry = !debug ? LocateRegistry.createRegistry(Naming.RMI_REGISTRY_PORT) : namingRegistry;
-			Transaction stub = (Transaction) UnicastRemoteObject
-					.exportObject(new TransactionRemote(auditStub, dbStub, triggerStub, cacheStub, args[0]), Transaction.RMI_PORT);
-			registry.rebind(Transaction.LOOKUPNAME, stub);
-			System.out.println("Transaction Server bound.");
+			Trigger stub = (Trigger) UnicastRemoteObject.exportObject(new TriggerRemote(auditStub, dbStub),
+					Trigger.RMI_PORT);
+			registry.rebind(Trigger.LOOKUPNAME, stub);
+			System.out.println("Trigger Server bound.");
 
 			// Add hostname to Naming server
-			namingStub.AddName((!debug ? InetAddress.getLocalHost().getHostName() : "localhost"),
-					Transaction.LOOKUPNAME);
+			namingStub.AddName((!debug ? InetAddress.getLocalHost().getHostName() : "localhost"), Trigger.LOOKUPNAME);
 
-			System.out.println("Transaction Server ready.");
+			System.out.println("Trigger Server ready.");
 			System.out.println("Press ENTER to quit.");
 			System.in.read();
 		} catch (NotBoundException e) {
@@ -111,7 +88,7 @@ public class TransactionServer {
 			try {
 				if (namingStub != null)
 					namingStub.RemoveName((!debug ? InetAddress.getLocalHost().getHostName() : "localhost"),
-							Transaction.LOOKUPNAME);
+							Trigger.LOOKUPNAME);
 			} catch (Exception e) {
 				System.err.println(e);
 				System.err.println("Failed to remove hostname from Naming Server.");

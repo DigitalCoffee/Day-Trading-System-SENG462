@@ -24,13 +24,15 @@ then
         sshpass -p $2 scp jar/transaction.jar $1@b146.seng.uvic.ca:/seng/scratch/group5/
         sshpass -p $2 scp jar/audit.jar $1@b147.seng.uvic.ca:/seng/scratch/group5/
         sshpass -p $2 scp jar/quote.jar $1@b148.seng.uvic.ca:/seng/scratch/group5/
+        sshpass -p $2 scp jar/quote.jar $1@b149.seng.uvic.ca:/seng/scratch/group5/
         sshpass -p $2 scp jar/db.jar $1@b140.seng.uvic.ca:/seng/scratch/group5/ #CHANGE LATER
-        #150??
+        sshpass -p $2 scp jar/trigger.jar $1@b150.seng.uvic.ca:/seng/scratch/group5/
         sshpass -p $2 scp jar/naming.jar $1@b153.seng.uvic.ca:/seng/scratch/group5/
     fi
     #Clear DB for run
     sshpass -p $2 ssh $1@b140.seng.uvic.ca "java -cp /seng/scratch/group5/:/seng/scratch/group5/db.jar db"
     sshpass -p $2 ssh $1@b147.seng.uvic.ca "rm /seng/scratch/group5/log_*.txt"
+    sshpass -p $2 ssh $1@b134.seng.uvic.ca "rm /seng/scratch/group5/installed/nginx/logs/*.log"
 
     #Run Naming -> Audit -> DB & QuoteCache -> Transactions -> HTTP's -> Workload Runners -> Workload Generator
     gnome-terminal -e "sshpass -p $2 ssh $1@b153.seng.uvic.ca \"java -jar /seng/scratch/group5/naming.jar\"" &
@@ -42,10 +44,12 @@ then
     gnome-terminal -e "sshpass -p $2 ssh $1@b133.seng.uvic.ca \"java -jar /seng/scratch/group5/workloadrunner.jar > run3.txt\"" &
     gnome-terminal -e "sshpass -p $2 ssh $1@b135.seng.uvic.ca \"java -jar /seng/scratch/group5/workloadrunner.jar > run4.txt\"" &
     gnome-terminal -e "sshpass -p $2 ssh $1@b147.seng.uvic.ca \"java -jar /seng/scratch/group5/audit.jar\"" &
+    gnome-terminal -e "sshpass -p $2 ssh $1@b140.seng.uvic.ca \"java -jar /seng/scratch/group5/db.jar\"" & #CHANGE LATER
 
     read -p "Press any key when ready" c
-    gnome-terminal -e "sshpass -p $2 ssh $1@b140.seng.uvic.ca \"java -jar /seng/scratch/group5/db.jar\"" & #CHANGE LATER
     gnome-terminal -e "sshpass -p $2 ssh $1@b148.seng.uvic.ca \"java -jar /seng/scratch/group5/quote.jar\"" &
+    #gnome-terminal -e "sshpass -p $2 ssh $1@b149.seng.uvic.ca \"java -jar /seng/scratch/group5/quote.jar\"" &
+    gnome-terminal -e "sshpass -p $2 ssh $1@b150.seng.uvic.ca \"java -jar /seng/scratch/group5/trigger.jar\"" &
 
     read -p "Press any key when ready" c
     gnome-terminal -e "sshpass -p $2 ssh $1@b142.seng.uvic.ca \"java -jar /seng/scratch/group5/transaction.jar 1\"" &

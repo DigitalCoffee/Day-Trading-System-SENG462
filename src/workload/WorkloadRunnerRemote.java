@@ -71,7 +71,8 @@ public class WorkloadRunnerRemote implements WorkloadRunner {
 	 */
 	@Override
 	public boolean done() {
-		return !(java.lang.Thread.activeCount() > 1);
+		while (java.lang.Thread.activeCount() > 2);
+		return true;
 	}
 
 	/**

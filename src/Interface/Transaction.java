@@ -103,7 +103,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean SetBuyAmount(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
+	public String SetBuyAmount(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
 
 	// Returns true if there was a trigger to cancel
 	/**
@@ -113,7 +113,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean CancelSetBuy(String userid, String stockSymbol, long transactionNum) throws RemoteException;
+	public String CancelSetBuy(String userid, String stockSymbol, long transactionNum) throws RemoteException;
 
 	// Returns true if the buy trigger was successfully updated
 	/**
@@ -124,7 +124,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean SetBuyTrigger(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
+	public String SetBuyTrigger(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
 
 	// Returns true if the buy trigger was successfully created
 	/**
@@ -135,7 +135,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean SetSellAmount(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
+	public String SetSellAmount(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
 
 	// Returns true if there was a trigger to cancel
 	/**
@@ -145,7 +145,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean CancelSetSell(String userid, String stockSymbol, long transactionNum) throws RemoteException;
+	public String CancelSetSell(String userid, String stockSymbol, long transactionNum) throws RemoteException;
 
 	// Returns true if the buy trigger was successfully updated
 	/**
@@ -156,7 +156,7 @@ public interface Transaction extends Remote {
 	 * @return
 	 * @throws RemoteException
 	 */
-	public boolean SetSellTrigger(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
+	public String SetSellTrigger(String userid, String stockSymbol, double amount, long transactionNum) throws RemoteException;
 
 	// Returns a file of all commands executed by a user
 	/**

@@ -11,23 +11,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author andrew
  *
  */
-public class QuoteFactory extends Thread {
-	private Thread t;
+public class QuoteFactory {
 	public static final String QUOTE_SERVER = "quoteserve.seng.uvic.ca";
 	public static final int QUOTE_PORT = 4445;	// DO NOT CHANGE: Group 5's assigned port.
-	private static final int MAX_QUEUE_SIZE = 100;
-	protected ConcurrentLinkedQueue<Socket> Connections;
 
 	public QuoteFactory() {
-		this.Connections = new ConcurrentLinkedQueue<Socket>();
 	}
 
 	public String getQuote(String userid, String stockSymbol) throws IOException {
-		Socket kkSocket;
+		Socket kkSocket = null;
 		String get;
-		while ((kkSocket = Connections.poll()) == null)
-			;
 		try {
+			kkSocket = new Socket(QUOTE_SERVER, QUOTE_PORT);
 			PrintWriter out = new PrintWriter(kkSocket.getOutputStream(), true);
 			BufferedReader in = new BufferedReader(new InputStreamReader(kkSocket.getInputStream()));
 			out.println(stockSymbol + ',' + userid);
@@ -37,33 +32,12 @@ public class QuoteFactory extends Thread {
 			kkSocket.close();
 		} catch (IOException e) {
 			System.err.println("Couldn't get I/O for the connection Project Quote Server likely down");
+			e.printStackTrace();
 			throw e;
+		} finally {
+			if (kkSocket != null) kkSocket.close();
 		}
 
 		return get;
-	}
-
-	public void run() {
-		while (true) {
-			while (Connections.size() < MAX_QUEUE_SIZE) {
-				try {
-					Socket kkSocket = new Socket(QUOTE_SERVER, QUOTE_PORT);
-					Connections.add(kkSocket);
-				} catch (java.net.UnknownHostException e) {
-					System.err.println("Don't know about host: " + QUOTE_SERVER);
-				} catch (IOException e) {
-					System.err.println("Couldn't get I/O for the connection Project Quote Server likely down");
-				}
-			}
-		}
-
-	}
-
-	public void start() {
-		System.out.println("QuoteConnFactory, max number of connections: " + MAX_QUEUE_SIZE);
-		if (t == null) {
-			t = new Thread(this);
-			t.start();
-		}
 	}
 }

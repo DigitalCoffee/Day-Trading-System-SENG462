@@ -3,10 +3,7 @@
  */
 package transaction;
 
-import java.util.HashMap;
 import java.util.Stack;
-
-import quote.Quote;
 
 /**
  * @author andrew
@@ -15,17 +12,19 @@ import quote.Quote;
 public class User {
 	String userid;
 	Account account;
-	HashMap<String, Quote> quotes;
-	HashMap<String, Trigger> triggers;
 	Stack<Buy> buys;
 	Stack<Sell> sells;
+	long timestamp;
 
 	public User(String uid) {
 		this.userid = uid;
 		this.account = new Account();
-		this.quotes = new HashMap<String, Quote>();
-		this.triggers = new HashMap<String, Trigger>();
 		this.buys = new Stack<Buy>();
 		this.sells = new Stack<Sell>();
+		this.timestamp = -1L;
+	}
+	
+	public void setTime(long timestamp){
+		this.timestamp = timestamp;
 	}
 }

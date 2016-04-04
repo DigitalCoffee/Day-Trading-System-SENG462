@@ -27,7 +27,7 @@ public class Worker extends Thread implements Serializable {
 	private Thread t;
 	private String threadName;
 	public List<String> commands;
-	public final static String HTTP_HOST = "[fe80::d6be:d9ff:fec8:238d]";// "b134.seng.uvic.ca";
+	public final static String HTTP_HOST = "b134.seng.uvic.ca";
 	public final static int HTTP_PORT = 44450;
 	private boolean DEBUG = false;
 	private long beginTime;
@@ -56,7 +56,7 @@ public class Worker extends Thread implements Serializable {
 			public String handleResponse(final HttpResponse response) throws ClientProtocolException, IOException {
 				long end = System.currentTimeMillis();
 				long diff = end - beginTime;
-				System.out.println((diff > 10000 ? "COMMAND TOOK TOO LONG!!!!!! " : "") + "Response time for " + command
+				System.out.println((diff > 15000 ? "COMMAND TOOK TOO LONG!!!!!! " : "") + "Response time for " + command
 						+ ": " + Double.toString(diff) + " msecs");
 				int status = response.getStatusLine().getStatusCode();
 
@@ -64,6 +64,7 @@ public class Worker extends Thread implements Serializable {
 					HttpEntity entity = response.getEntity();
 					return entity != null ? EntityUtils.toString(entity) : null;
 				} else {
+					System.out.println("Command returned arror: " + command);
 					return "";
 					// throw new ClientProtocolException(
 					// "Unexpected response status: " + status + "\n" +
@@ -93,8 +94,12 @@ public class Worker extends Thread implements Serializable {
 			for (int i = 0; i < commands.size(); i++) {
 				if (DEBUG)
 					System.out.println("Thread: " + threadName + ", sending " + commands.get(i));
+				try {
 				send(httpclient, httpServer, commands.get(i));
 				//if (DEBUG) System.in.read();
+				} catch (Exception e) {
+					System.out.println("COMMAND TOOK TOO LONG!!!!!! (maybe?):" + commands.get(i));
+				}
 			}
 		} catch (Exception e) {
 			System.err.println("Thread for user " + threadName + " threw exception:\n" + e.getMessage());

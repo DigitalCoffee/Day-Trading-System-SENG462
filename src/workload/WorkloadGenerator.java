@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -186,7 +185,7 @@ public class WorkloadGenerator {
 				Entry<String, WorkloadRunner> pair = iw.next();
 				WorkloadRunner current = (WorkloadRunner) pair.getValue();
 				try {
-					while (!current.done()) TimeUnit.SECONDS.sleep(1);
+					current.done();
 				} catch (Exception e) {
 					System.err.println("Error checking status of slaves. Quitting.");
 					System.exit(1);
