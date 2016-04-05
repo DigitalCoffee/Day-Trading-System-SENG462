@@ -44,7 +44,7 @@ public class HTTPThread extends Thread {
 			if (cmd == null) {
 				System.err.println("FAILURE");
 				response = "FAILURE: No command sent";
-				code = 500;
+				code = 200;
 			}
 
 			Pattern p = Pattern.compile(INPUT_REGEX);
@@ -61,10 +61,11 @@ public class HTTPThread extends Thread {
 					default:
 						System.err.println("Invalid command");
 						response = "INVALID COMMAND";
-						code = 500;
+						code = 200;
 						break;
 					case "ADD":
 						success = TransactionStub.Add(name, Double.valueOf(m.group(4)), transactionNum);
+						if (success) result = "Added money to user's account.";
 						break;
 					case "QUOTE":
 						result = TransactionStub.Quote_CMD(name, m.group(4), transactionNum);
@@ -131,23 +132,23 @@ public class HTTPThread extends Thread {
 				} catch (RemoteException e) {
 					System.err.println("Transaction server RMI connection exception");
 					response = "RMI FAILURE";
-					code = 500;
+					code = 200;
 				} catch (NumberFormatException e) {
 					System.err.println("Could not parse a dollar amount from: " + cmd);
 					response = "INVALID COMMAND";
-					code = 500;
+					code = 200;
 				}
 			} else {
 				System.err.println("Command not found.");
 				System.err.println("Transaction server RMI connection exception");
 				response = "INVALID";
-				code = 500;
+				code = 200;
 			}
 		} catch (Exception e) {
 			System.err.println("Failed command");
 			e.printStackTrace();
 			response = "FAILURE: " + e.getMessage();
-			code = 500;
+			code = 200;
 		}
 		try {
 			exchange.sendResponseHeaders(code, response.length());
