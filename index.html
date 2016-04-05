@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+</head>
+	
+<body>
+
+<h2>Fightclub SENG 462</h2>
+<form action ="testscript()">
+  Username:<br>
+  <input type="text" id= uname name="Username">
+  <br>
+  Command:<br>
+  <input type="text" id= cmd name="Command">
+  <br>
+  Stock:<br>
+  <input type="text" id= stk name="Stock">
+  <br>
+  Amount:<br>
+  <input type="text" id= amt name="Amount">
+  <br>
+  <button type = "button" onclick= "testscript()">Submit</button>
+  <br>
+</form>
+<p id="Result"></p>
+<p id="cmd2"></p>
+<script>
+	var x="";
+	document.getElementById("Result").innerHTML= "Results will go here";
+	function testscript(){
+	 x =document.getElementById("uname").value;
+	document.getElementById("Result").innerHTML=x;
+	if(document.getElementById("cmd").value=="ADD"||document.getElementById("cmd").value=="QUOTE"  ){
+		x=document.getElementById("cmd").value+","+document.getElementById("uname").value+","+document.getElementById("amt").value;
+	}else if(document.getElementById("cmd").value=="QUOTE" ||document.getElementById("cmd").value=="CANCEL_SET_BUY"||document.getElementById("cmd").value=="CANCEL_SET_SELL"){
+		x=document.getElementById("cmd").value+","+document.getElementById("uname").value+","+document.getElementById("stk").value;
+	}else if(document.getElementById("cmd").value=="BUY" ||document.getElementById("cmd").value=="SELL" ||document.getElementById("cmd").value=="DISPLAY_SUMMARY"){
+		x=document.getElementById("cmd").value+","+document.getElementById("uname").value+","+document.getElementById("stk").value+","+document.getElementById("amt").value;
+	}else if(document.getElementById("cmd").value=="CANCEL_BUY" ||document.getElementById("cmd").value=="COMMIT_BUY"||document.getElementById("cmd").value=="CANCEL_SELL"||document.getElementById("cmd").value=="COMMIT_SELL"||document.getElementById("cmd").value=="SET_BUY_AMOUNT"||document.getElementById("cmd").value=="SET_SELL_AMOUNT"||document.getElementById("cmd").value=="SET_BUY_TRIGGER"||document.getElementById("cmd").value=="SET_SELL_TRIGGER"){
+		x=document.getElementById("cmd").value+","+document.getElementById("uname").value;
+	}else{
+		x= "unknown command";
+	}	
+	x="["+parseInt(Math.random()*10000)+"] "+x
+	console.log(x);
+
+
+
+	$.ajax({
+
+	    type: 'POST',
+
+	    // make sure you respect the same origin policy with this url:
+
+	    // http://en.wikipedia.org/wiki/Same_origin_policy
+
+	    url: 'http://b134.seng.uvic.ca:44450/cmd',
+
+	    dataType : "text",
+
+	    data: x,
+
+	    success: function(msg){
+
+		document.getElementById("Result").innerHTML=msg;
+
+	    }
+
+	});
+}
+</script>
+
+
+
+</body>
+</html>
